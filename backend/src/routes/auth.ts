@@ -28,9 +28,18 @@ router.post('/register', async (req, res) => {
     console.log('Attempting to check for existing user...');
 
     // Check if user exists
-    const existingUser = await sql`
-      SELECT id FROM users WHERE email = ${email}
-    `;
+    let existingUser;
+    try {
+      existingUser = await sql`
+        SELECT id FROM users WHERE email = ${email}
+      `;
+      console.log('User check completed, rows:', existingUser.rows.length);
+    } catch (dbError: any) {
+      console.error('Database query error:', dbError);
+      console.error('Error message:', dbError.message);
+      console.error('Error code:', dbError.code);
+      throw dbError;
+    }
 
     if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: 'User already exists' });
@@ -38,13 +47,24 @@ router.post('/register', async (req, res) => {
 
     // Hash password
     const passwordHash = await hashPassword(password);
+    console.log('Password hashed, attempting to create user...');
 
     // Create user
-    const result = await sql`
-      INSERT INTO users (email, password_hash, full_name, default_currency, notification_settings)
-      VALUES (${email}, ${passwordHash}, ${full_name}, 'SYP', '{}'::jsonb)
-      RETURNING id, email, full_name, role, default_currency, notification_settings, created_date, updated_date
-    `;
+    let result;
+    try {
+      result = await sql`
+        INSERT INTO users (email, password_hash, full_name, default_currency, notification_settings)
+        VALUES (${email}, ${passwordHash}, ${full_name}, 'SYP', '{}'::jsonb)
+        RETURNING id, email, full_name, role, default_currency, notification_settings, created_date, updated_date
+      `;
+      console.log('User created successfully, rows:', result.rows.length);
+    } catch (dbError: any) {
+      console.error('Database insert error:', dbError);
+      console.error('Error message:', dbError.message);
+      console.error('Error code:', dbError.code);
+      console.error('Error detail:', dbError.detail);
+      throw dbError;
+    }
 
     const user = result.rows[0];
     const token = generateToken({
