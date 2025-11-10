@@ -11,11 +11,17 @@ function getPool(): Pool {
       throw new Error('POSTGRES_URL environment variable is not set');
     }
 
+    // Configure SSL for Supabase connections
+    // Supabase requires SSL but may use certificates not in the default chain
+    const sslConfig = connectionString.includes('supabase') || connectionString.includes('sslmode=require')
+      ? {
+          rejectUnauthorized: false, // Accept self-signed certificates for Supabase
+        }
+      : undefined;
+
     pool = new Pool({
       connectionString,
-      ssl: connectionString.includes('sslmode=require') || connectionString.includes('supabase') 
-        ? { rejectUnauthorized: false } 
-        : undefined,
+      ssl: sslConfig,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
