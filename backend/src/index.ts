@@ -73,7 +73,14 @@ app.get('/health', (req, res) => {
 // Debug middleware to log all requests (before routes)
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('Request URL:', req.url);
+  console.log('Request Original URL:', req.originalUrl);
   next();
+});
+
+// Test route to verify routing works
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API routing is working', timestamp: new Date().toISOString() });
 });
 
 // Routes
@@ -108,4 +115,7 @@ export default app;
 
 // Also export as a named export for compatibility
 export { app };
+
+// Export handler function for Vercel (alternative format)
+export const handler = app;
 
