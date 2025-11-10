@@ -20,13 +20,29 @@ function getPool(): Pool {
                        connectionString.includes('pooler.supabase.com');
 
     // Clean up connection string - remove problematic query parameters
-    // Remove sslmode and any other query parameters that might cause issues
-    const url = new URL(connectionString.replace(/^postgres:/, 'http:'));
-    const cleanConnectionString = `postgresql://${url.username}:${url.password}@${url.hostname}:${url.port}${url.pathname}`;
-    
-    console.log('Cleaned connection string host:', url.hostname, 'port:', url.port);
-    
-    connectionString = cleanConnectionString;
+    // Parse and reconstruct connection string without query parameters
+    try {
+      // Handle both postgres:// and postgresql:// protocols
+      const protocolMatch = connectionString.match(/^(postgres(ql)?):\/\//);
+      if (protocolMatch) {
+        const protocol = protocolMatch[1];
+        const rest = connectionString.substring(protocolMatch[0].length);
+        
+        // Split by @ to separate credentials from host
+        const parts = rest.split('@');
+        if (parts.length === 2) {
+          const [credentials, hostAndPath] = parts;
+          // Remove query parameters from hostAndPath
+          const cleanHostAndPath = hostAndPath.split('?')[0];
+          connectionString = `${protocol}://${credentials}@${cleanHostAndPath}`;
+          console.log('Cleaned connection string (removed query parameters)');
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to clean connection string, using original:', error);
+      // Fallback: just remove query parameters with regex
+      connectionString = connectionString.split('?')[0];
+    }
 
     const poolConfig: any = {
       connectionString,
