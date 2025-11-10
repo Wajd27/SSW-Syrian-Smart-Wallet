@@ -19,8 +19,14 @@ function getPool(): Pool {
     const isSupabase = connectionString.includes('supabase') || 
                        connectionString.includes('pooler.supabase.com');
 
-    // Remove sslmode from connection string if present (we'll handle SSL separately)
-    connectionString = connectionString.replace(/[?&]sslmode=[^&]*/g, '');
+    // Clean up connection string - remove problematic query parameters
+    // Remove sslmode and any other query parameters that might cause issues
+    const url = new URL(connectionString.replace(/^postgres:/, 'http:'));
+    const cleanConnectionString = `postgresql://${url.username}:${url.password}@${url.hostname}:${url.port}${url.pathname}`;
+    
+    console.log('Cleaned connection string host:', url.hostname, 'port:', url.port);
+    
+    connectionString = cleanConnectionString;
 
     const poolConfig: any = {
       connectionString,
