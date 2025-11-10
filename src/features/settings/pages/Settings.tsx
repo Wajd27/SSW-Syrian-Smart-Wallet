@@ -15,6 +15,7 @@ function Settings() {
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     default_currency: user?.default_currency || 'SYP',
+    last_exchange_rate: user?.last_exchange_rate || 13000,
     notification_settings: {
       recurring_reminders: user?.notification_settings?.recurring_reminders ?? true,
       budget_alerts: user?.notification_settings?.budget_alerts ?? true,
@@ -36,6 +37,7 @@ function Settings() {
     updateMutation.mutate({
       full_name: formData.full_name,
       default_currency: formData.default_currency,
+      last_exchange_rate: formData.last_exchange_rate,
       notification_settings: formData.notification_settings,
     });
   };
@@ -65,6 +67,16 @@ function Settings() {
                 { value: 'SYP', label: 'SYP' },
                 { value: 'USD', label: 'USD' },
               ]}
+            />
+            <Input
+              label={t('settings.defaultExchangeRate')}
+              type="number"
+              step="0.01"
+              value={formData.last_exchange_rate}
+              onChange={(e) =>
+                setFormData({ ...formData, last_exchange_rate: parseFloat(e.target.value) || 13000 })
+              }
+              helperText={t('settings.exchangeRateHelper')}
             />
           </div>
         </Card>

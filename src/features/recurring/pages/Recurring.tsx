@@ -19,12 +19,18 @@ function Recurring() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState<RecurringTransaction | null>(null);
+  
+  // Get default exchange rate from user's last used rate
+  const getDefaultExchangeRate = () => {
+    return user?.last_exchange_rate || 13000;
+  };
+  
   const [formData, setFormData] = useState({
     wallet_id: '',
     title: '',
     amount_syp: 0,
     amount_usd: 0,
-    exchange_rate: 13000,
+    exchange_rate: getDefaultExchangeRate(),
     primary_currency: 'SYP' as 'SYP' | 'USD',
     type: 'expense' as 'income' | 'expense',
     category: '',
@@ -117,7 +123,7 @@ function Recurring() {
       title: '',
       amount_syp: 0,
       amount_usd: 0,
-      exchange_rate: 13000,
+      exchange_rate: getDefaultExchangeRate(),
       primary_currency: 'SYP',
       type: 'expense',
       category: '',
@@ -283,7 +289,7 @@ function Recurring() {
             required
           />
           <Input
-            label={t('transactions.title')}
+            label={t('transactions.transactionTitle')}
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             required

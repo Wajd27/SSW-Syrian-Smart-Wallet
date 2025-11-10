@@ -47,7 +47,14 @@ function SavingsGoals() {
       const allGoals = await Promise.all(
         walletIds.map((id) => entities.savingsGoal.filter({ wallet_id: id }))
       );
-      return allGoals.flat();
+      // Deduplicate goals by id to prevent duplicates
+      const goalsMap = new Map<string, SavingsGoal>();
+      allGoals.flat().forEach((goal) => {
+        if (!goalsMap.has(goal.id)) {
+          goalsMap.set(goal.id, goal);
+        }
+      });
+      return Array.from(goalsMap.values());
     },
     enabled: !!user?.email && !!wallets,
   });
@@ -139,7 +146,12 @@ function SavingsGoals() {
           return (
             <Card key={goal.id} className="hover:shadow-lg transition-shadow">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
+                  <span className="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
+                    {wallet?.currency || 'SYP'}
+                  </span>
+                </div>
                 <p className="text-sm text-gray-500">{wallet?.name}</p>
               </div>
               <div className="space-y-2">
@@ -207,10 +219,18 @@ function SavingsGoals() {
             onChange={(e) => setFormData({ ...formData, wallet_id: e.target.value })}
             options={[
               { value: '', label: t('common.select') },
-              ...(wallets?.map((w) => ({ value: w.id, label: w.name })) || []),
+              ...(wallets?.map((w) => ({ value: w.id, label: `${w.name} (${w.currency})` })) || []),
             ]}
             required
           />
+          {formData.wallet_id && (
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <div className="text-sm text-gray-600">{t('wallets.currency')}:</div>
+              <div className="text-lg font-semibold text-gray-900">
+                {wallets?.find((w) => w.id === formData.wallet_id)?.currency || 'SYP'}
+              </div>
+            </div>
+          )}
           <Input
             label={t('savingsGoals.goalTitle')}
             value={formData.title}

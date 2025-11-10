@@ -32,12 +32,17 @@ function Transactions() {
     start_date: '',
     end_date: '',
   });
+  // Initialize form data with user's last exchange rate or fallback
+  const getDefaultExchangeRate = () => {
+    return user?.last_exchange_rate || 13000;
+  };
+
   const [formData, setFormData] = useState({
     wallet_id: '',
     title: '',
     amount_syp: 0,
     amount_usd: 0,
-    exchange_rate: 13000,
+    exchange_rate: getDefaultExchangeRate(),
     primary_currency: 'SYP' as 'SYP' | 'USD',
     type: 'expense' as 'income' | 'expense',
     category: '',
@@ -138,7 +143,7 @@ function Transactions() {
       title: '',
       amount_syp: 0,
       amount_usd: 0,
-      exchange_rate: 13000,
+      exchange_rate: getDefaultExchangeRate(),
       primary_currency: 'SYP',
       type: 'expense',
       category: '',
@@ -169,10 +174,9 @@ function Transactions() {
     } else {
       setEditingTransaction(null);
       resetForm();
-      // Fetch latest exchange rate
-      exchangeRateApi.getLatestRate().then((rate) => {
-        setFormData((prev) => ({ ...prev, exchange_rate: rate }));
-      });
+      // Use user's last exchange rate as default (not live API rate)
+      const defaultRate = user?.last_exchange_rate || 13000;
+      setFormData((prev) => ({ ...prev, exchange_rate: defaultRate }));
     }
     setIsModalOpen(true);
   };
@@ -377,7 +381,7 @@ function Transactions() {
             required
           />
           <Input
-            label={t('transactions.title')}
+            label={t('transactions.transactionTitle')}
             value={formData.title}
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             required
