@@ -19,7 +19,7 @@ const allowedOrigins = [
 ].filter(Boolean).map(origin => origin?.replace(/\/+$/, '')); // Remove trailing slashes
 
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
@@ -52,7 +52,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Root route
-app.get('/', (req, res) => {
+app.get('/', (req: express.Request, res: express.Response) => {
   res.json({ 
     message: 'Wallet Management API',
     version: '1.0.0',
@@ -66,12 +66,12 @@ app.get('/', (req, res) => {
 });
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (req: express.Request, res: express.Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Debug middleware to log all requests (before routes)
-app.use((req, res, next) => {
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   console.log('Request URL:', req.url);
   console.log('Request Original URL:', req.originalUrl);
@@ -79,7 +79,7 @@ app.use((req, res, next) => {
 });
 
 // Test route to verify routing works
-app.get('/api/test', (req, res) => {
+app.get('/api/test', (req: express.Request, res: express.Response) => {
   res.json({ message: 'API routing is working', timestamp: new Date().toISOString() });
 });
 
@@ -89,7 +89,7 @@ app.use('/api/entities', entityRoutes);
 app.use('/api/files', fileRoutes);
 
 // 404 handler
-app.use((req, res) => {
+app.use((req: express.Request, res: express.Response) => {
   console.log('404 - Route not found:', req.method, req.path);
   res.status(404).json({ error: 'Route not found', path: req.path, method: req.method });
 });
