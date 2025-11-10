@@ -5,7 +5,6 @@ import { useSearchParams } from 'react-router-dom';
 import { entities } from '@/shared/api/entities';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { filesApi } from '@/shared/api/files';
-import { exchangeRateApi } from '@/shared/api/exchangeRate';
 import Card from '@/shared/components/Card/Card';
 import Button from '@/shared/components/Button/Button';
 import Modal from '@/shared/components/Modal/Modal';

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { exchangeRateApi } from '@/shared/api/exchangeRate';
-import { authApi } from '@/shared/api/auth';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import Card from '@/shared/components/Card/Card';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
@@ -11,7 +10,7 @@ import { CurrencyDollarIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 function ExchangeRateWidget() {
   const { t } = useTranslation();
-  const { user, setUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
   const [liveRate, setLiveRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,10 +22,9 @@ function ExchangeRateWidget() {
 
   const updateUserRateMutation = useMutation({
     mutationFn: async (rate: number) => {
-      return authApi.updateUser({ last_exchange_rate: rate });
+      await updateUser({ last_exchange_rate: rate });
     },
-    onSuccess: (updatedUser) => {
-      setUser(updatedUser);
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
   });
