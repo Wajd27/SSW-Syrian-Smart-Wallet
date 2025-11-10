@@ -1,13 +1,12 @@
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 export function generateToken(payload: { email: string; id: string; full_name: string }): string {
-  const options: SignOptions = {
+  return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
-  };
-  return jwt.sign(payload, JWT_SECRET, options);
+  } as jwt.SignOptions);
 }
 
 export function verifyToken(token: string): any {
