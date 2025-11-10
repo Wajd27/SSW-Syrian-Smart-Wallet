@@ -15,6 +15,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email, password, and full name are required' });
     }
 
+    // Check database connection
+    if (!process.env.POSTGRES_URL) {
+      console.error('POSTGRES_URL environment variable is not set');
+      return res.status(500).json({ error: 'Database configuration error' });
+    }
+
     // Check if user exists
     const existingUser = await sql`
       SELECT id FROM users WHERE email = ${email}
@@ -56,7 +62,29 @@ router.post('/register', async (req, res) => {
     });
   } catch (error: any) {
     console.error('Register error:', error);
-    res.status(500).json({ error: error.message || 'Registration failed' });
+    console.error('Error stack:', error.stack);
+    console.error('Error code:', error.code);
+    console.error('Error detail:', error.detail);
+    
+    // Provide more helpful error messages
+    let errorMessage = error.message || 'Registration failed';
+    if (error.code === '42P01') {
+      errorMessage = 'Database table not found. Please run the database schema.';
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      errorMessage = 'Database connection failed. Please check POSTGRES_URL.';
+    } else if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      errorMessage = 'Database table missing. Please run the database schema.';
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      ...(process.env.NODE_ENV !== 'production' && { 
+        details: error.stack,
+        type: error.constructor?.name,
+        code: error.code,
+        originalMessage: error.message
+      })
+    });
   }
 });
 
