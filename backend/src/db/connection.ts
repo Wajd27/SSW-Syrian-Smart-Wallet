@@ -13,19 +13,27 @@ function getPool(): Pool {
 
     // Configure SSL for Supabase connections
     // Supabase requires SSL but may use certificates not in the default chain
-    const sslConfig = connectionString.includes('supabase') || connectionString.includes('sslmode=require')
-      ? {
-          rejectUnauthorized: false, // Accept self-signed certificates for Supabase
-        }
-      : undefined;
+    // Always use SSL with rejectUnauthorized: false for Supabase
+    const isSupabase = connectionString.includes('supabase') || 
+                       connectionString.includes('sslmode=require') ||
+                       connectionString.includes('pooler.supabase.com');
 
-    pool = new Pool({
+    const poolConfig: any = {
       connectionString,
-      ssl: sslConfig,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
-    });
+      connectionTimeoutMillis: 10000, // Increased timeout
+    };
+
+    // Always enable SSL for Supabase with rejectUnauthorized: false
+    if (isSupabase) {
+      poolConfig.ssl = {
+        rejectUnauthorized: false,
+      };
+      console.log('SSL configured for Supabase connection');
+    }
+
+    pool = new Pool(poolConfig);
 
     // Handle pool errors
     pool.on('error', (err) => {
