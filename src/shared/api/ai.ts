@@ -1,8 +1,6 @@
 // AI Assistant API - Using free LLM API
 // For production, use OpenAI API or Hugging Face Inference API
 
-const AI_API_URL = import.meta.env.VITE_AI_API_URL || '';
-
 export interface AIRecommendationResponse {
   recommendations: Array<{
     type: string;
@@ -63,17 +61,15 @@ export const aiApi = {
     }
 
     // Analyze budgets
-    if (context.budgets) {
-      context.budgets.forEach((budget) => {
-        // This would require transaction data to calculate actual spending
-        // For now, just a placeholder
-      });
+    if (context.budgets && context.budgets.length > 0) {
+      // This would require transaction data to calculate actual spending
+      // For now, just a placeholder
     }
 
     return { recommendations };
   },
 
-  async askQuestion(question: string, context: any): Promise<string> {
+  async askQuestion(question: string, _context: any): Promise<string> {
     // In a real implementation, this would call an LLM API
     // For now, return a mock response
     return `Based on your financial data, I recommend focusing on your savings goals and paying off high-interest debts first. ${question}`;

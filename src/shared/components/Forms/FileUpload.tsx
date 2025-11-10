@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import clsx from 'clsx';
 import { PhotoIcon } from '@heroicons/react/24/outline';
 
 interface FileUploadProps {
@@ -18,7 +17,6 @@ function FileUpload({
   helperText,
   accept = 'image/*',
   onChange,
-  value,
   previewUrl,
 }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);

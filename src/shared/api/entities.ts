@@ -11,7 +11,8 @@ import {
   AIRecommendation,
   Investment,
   Debt,
-  PaginatedResponse,
+} from '../types/entities';
+import {
   WalletFilter,
   TransactionFilter,
   RecurringTransactionFilter,
@@ -21,7 +22,7 @@ import {
   DebtFilter,
   FamilyMemberFilter,
   NotificationFilter,
-} from '../types';
+} from '../types/api';
 
 // Generic entity operations (simulating Base44.entities pattern)
 export const entities = {

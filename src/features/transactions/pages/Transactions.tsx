@@ -14,7 +14,7 @@ import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import FileUpload from '@/shared/components/Forms/FileUpload';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import { PlusIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Transaction as TransactionType } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
 
@@ -462,13 +462,17 @@ function Transactions() {
             onChange={(e) => setFormData({ ...formData, transaction_date: e.target.value })}
             required
           />
-            <textarea
-              className="input"
-              label={t('transactions.notes')}
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={3}
-            />
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t('transactions.notes')}
+              </label>
+              <textarea
+                className="input"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+              />
+            </div>
           <FileUpload
             label={t('transactions.receipt')}
             value={formData.receipt}

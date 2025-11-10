@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { entities } from '@/shared/api/entities';
 import { useAuth } from '@/features/auth/context/AuthContext';
-import { isBefore, parseISO, addDays } from 'date-fns';
+import { parseISO } from 'date-fns';
 
 function NotificationMonitor() {
   const { user } = useAuth();
@@ -130,8 +130,8 @@ function NotificationMonitor() {
 
       // Check budgets
       if (notificationSettings.budget_alerts !== false) {
-        const threshold = notificationSettings.budget_threshold || 80;
         // Budget checking would require transaction data - simplified here
+        // const threshold = notificationSettings.budget_threshold || 80;
       }
 
       // Check savings goals milestones

@@ -46,7 +46,7 @@ function NotificationPopover({ onClose }: NotificationPopoverProps) {
         <h3 className="text-lg font-semibold text-gray-900">{t('notifications.title')}</h3>
       </div>
       <div className="max-h-96 overflow-y-auto">
-        {notifications.length === 0 ? (
+        {!notifications || notifications.length === 0 ? (
           <div className="p-4 text-center text-gray-500">
             {t('notifications.noNotifications')}
           </div>

@@ -1,16 +1,5 @@
 import {
   User,
-  Wallet,
-  Transaction,
-  RecurringTransaction,
-  Budget,
-  SavingsGoal,
-  FamilyMember,
-  ExchangeRate,
-  Notification,
-  AIRecommendation,
-  Investment,
-  Debt,
 } from './entities';
 
 export interface ApiResponse<T> {

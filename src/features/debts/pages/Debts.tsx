@@ -7,7 +7,6 @@ import Card from '@/shared/components/Card/Card';
 import Button from '@/shared/components/Button/Button';
 import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
-import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';

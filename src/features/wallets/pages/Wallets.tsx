@@ -54,12 +54,6 @@ function Wallets() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => entities.wallet.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wallets'] });
-    },
-  });
 
   const resetForm = () => {
     setFormData({

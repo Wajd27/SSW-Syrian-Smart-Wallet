@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslation } from 'react-i18next';
 import { entities } from '@/shared/api/entities';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { BellIcon } from '@heroicons/react/24/outline';
 import NotificationPopover from './NotificationPopover';
 
 function NotificationBell() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 

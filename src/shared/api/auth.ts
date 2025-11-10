@@ -1,5 +1,10 @@
 import { apiClient } from './client';
-import { User, AuthResponse } from '../types';
+import { User } from '../types/entities';
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+}
 
 export interface LoginCredentials {
   email: string;

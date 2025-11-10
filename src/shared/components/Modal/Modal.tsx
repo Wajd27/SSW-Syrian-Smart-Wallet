@@ -1,7 +1,6 @@
 import { Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { useTranslation } from 'react-i18next';
 
 interface ModalProps {
   isOpen: boolean;
@@ -20,7 +19,6 @@ const sizeClasses = {
 };
 
 function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
-  const { t } = useTranslation();
 
   return (
     <Transition appear show={isOpen} as={Fragment}>

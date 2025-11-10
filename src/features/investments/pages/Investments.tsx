@@ -156,7 +156,7 @@ function Investments() {
             ((investment.current_value - investment.initial_amount) / investment.initial_amount) *
             100;
           const chartData = investment.history.length > 0
-            ? investment.history.map((h) => ({
+            ? investment.history.map((h: { date: string; value: number }) => ({
                 name: new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                 value: h.value,
               }))
@@ -340,13 +340,17 @@ function Investments() {
               }
             />
           </div>
-          <textarea
-            className="input"
-            label={t('transactions.notes')}
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            rows={3}
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('transactions.notes')}
+            </label>
+            <textarea
+              className="input"
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              rows={3}
+            />
+          </div>
           <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse pt-4">
             <Button
               type="button"

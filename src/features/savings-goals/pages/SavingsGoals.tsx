@@ -250,13 +250,17 @@ function SavingsGoals() {
             value={formData.category}
             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
           />
-          <textarea
-            className="input"
-            label={t('savingsGoals.description')}
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={3}
-          />
+          <div className="w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('savingsGoals.description')}
+            </label>
+            <textarea
+              className="input"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={3}
+            />
+          </div>
           <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse pt-4">
             <Button
               type="button"
