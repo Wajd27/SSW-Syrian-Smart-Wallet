@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+import { sql } from '../db/connection.js';
 
 /**
  * Validate table/column name to prevent SQL injection
@@ -68,19 +68,9 @@ export async function updateEntity(
     RETURNING *
   `;
 
-  // Use pg directly for parameterized queries
-  // @vercel/postgres sql template doesn't support this pattern
-  // We need to use the underlying pg client
-  const { Pool } = await import('pg');
-  const pool = new Pool({
-    connectionString: process.env.POSTGRES_URL,
-  });
-
-  try {
-    const result = await pool.query(query, values);
-    return result.rows;
-  } finally {
-    await pool.end();
-  }
+  // Use the shared connection pool
+  const { db } = await import('../db/connection.js');
+  const result = await db.query(query, values);
+  return result.rows;
 }
 
