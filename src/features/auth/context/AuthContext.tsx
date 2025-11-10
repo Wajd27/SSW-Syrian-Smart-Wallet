@@ -66,15 +66,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
     setUser(response.user);
-    // Use setTimeout to avoid navigation during render
-    setTimeout(() => navigate('/'), 0);
+    // Use requestAnimationFrame to ensure navigation happens after render
+    requestAnimationFrame(() => {
+      navigate('/', { replace: true });
+    });
   };
 
   const register = async (email: string, password: string, fullName: string) => {
     const response = await authApi.register({ email, password, full_name: fullName });
     setUser(response.user);
-    // Use setTimeout to avoid navigation during render
-    setTimeout(() => navigate('/'), 0);
+    // Use requestAnimationFrame to ensure navigation happens after render
+    requestAnimationFrame(() => {
+      navigate('/', { replace: true });
+    });
   };
 
   const logout = async () => {

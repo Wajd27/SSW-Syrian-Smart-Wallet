@@ -23,23 +23,30 @@ const AIAssistant = React.lazy(() => import('@/features/ai-assistant/pages/AIAss
 const Reports = React.lazy(() => import('@/features/reports/pages/Reports'));
 const Settings = React.lazy(() => import('@/features/settings/pages/Settings'));
 
+// Redirect component that safely handles navigation
+function SafeRedirect({ to }: { to: string }) {
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure this happens after render
+    requestAnimationFrame(() => {
+      navigate(to, { replace: true });
+    });
+  }, [navigate, to]);
+
+  return <LoadingSpinner size="lg" className="min-h-screen" />;
+}
+
 // Wrapper component to handle auth redirects
 function AuthRouteWrapper({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!loading && user) {
-      navigate('/', { replace: true });
-    }
-  }, [user, loading, navigate]);
 
   if (loading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
 
   if (user) {
-    return null; // Will redirect via useEffect
+    return <SafeRedirect to="/" />;
   }
 
   return <>{children}</>;
