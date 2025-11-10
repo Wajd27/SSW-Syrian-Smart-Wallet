@@ -154,7 +154,7 @@ router.patch('/me', authenticateToken, async (req: AuthRequest, res) => {
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
         if (field === 'notification_settings') {
-          updates[field] = JSON.stringify(req.body[field]);
+          updates[field] = req.body[field];
         } else {
           updates[field] = req.body[field];
         }
@@ -165,64 +165,64 @@ router.patch('/me', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
-    const allowedFields = ['full_name', 'default_currency', 'notification_settings', 'last_exchange_rate'];
-    const updateFields: string[] = [];
-    const values: any[] = [];
+    // Build update query using pg directly for parameterized queries
+    const { Pool } = await import('pg');
+    const pool = new Pool({
+      connectionString: process.env.POSTGRES_URL,
+    });
 
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        if (field === 'notification_settings') {
-          updateFields.push(`${field} = $${values.length + 1}::jsonb`);
-          values.push(JSON.stringify(updates[field]));
-        } else {
-          updateFields.push(`${field} = $${values.length + 1}`);
-          values.push(updates[field]);
+    try {
+      const updateFields: string[] = [];
+      const values: any[] = [];
+      let paramIndex = 1;
+
+      for (const field of allowedFields) {
+        if (updates[field] !== undefined) {
+          if (field === 'notification_settings') {
+            updateFields.push(`${field} = $${paramIndex}::jsonb`);
+            values.push(JSON.stringify(updates[field]));
+          } else {
+            updateFields.push(`${field} = $${paramIndex}`);
+            values.push(updates[field]);
+          }
+          paramIndex++;
         }
       }
-    }
 
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    values.push(req.user!.email);
-
-    // Build the query with proper escaping
-    let query = `UPDATE users SET `;
-    const setParts: string[] = [];
-    
-    for (let i = 0; i < updateFields.length; i++) {
-      const field = updateFields[i].split(' = ')[0];
-      const value = values[i];
-      if (field === 'notification_settings') {
-        setParts.push(`${field} = '${JSON.stringify(value).replace(/'/g, "''")}'::jsonb`);
-      } else if (typeof value === 'string') {
-        setParts.push(`${field} = '${value.replace(/'/g, "''")}'`);
-      } else {
-        setParts.push(`${field} = ${value}`);
+      if (updateFields.length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update' });
       }
+
+      values.push(req.user!.email);
+
+      const query = `
+        UPDATE users
+        SET ${updateFields.join(', ')}, updated_date = CURRENT_TIMESTAMP
+        WHERE email = $${paramIndex}
+        RETURNING id, email, full_name, role, last_exchange_rate, default_currency, notification_settings, created_date, updated_date
+      `;
+
+      const result = await pool.query(query, values);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = result.rows[0];
+      res.json({
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+        role: user.role,
+        last_exchange_rate: user.last_exchange_rate,
+        default_currency: user.default_currency,
+        notification_settings: user.notification_settings,
+        created_date: user.created_date,
+        updated_date: user.updated_date,
+      });
+    } finally {
+      await pool.end();
     }
-    
-    query += setParts.join(', ') + `, updated_date = CURRENT_TIMESTAMP WHERE email = '${req.user!.email.replace(/'/g, "''")}' RETURNING id, email, full_name, role, last_exchange_rate, default_currency, notification_settings, created_date, updated_date`;
-
-    const result = await sql.unsafe(query);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const user = result.rows[0];
-    res.json({
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      role: user.role,
-      last_exchange_rate: user.last_exchange_rate,
-      default_currency: user.default_currency,
-      notification_settings: user.notification_settings,
-      created_date: user.created_date,
-      updated_date: user.updated_date,
-    });
   } catch (error: any) {
     console.error('Update user error:', error);
     res.status(500).json({ error: error.message || 'Failed to update user' });

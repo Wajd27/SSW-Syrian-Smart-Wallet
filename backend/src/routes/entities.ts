@@ -8,118 +8,12 @@ const router = express.Router();
 // Apply authentication to all entity routes
 router.use(authenticateToken);
 
-// Generic entity CRUD helper
-async function handleEntityCRUD(
-  req: AuthRequest,
-  res: express.Response,
-  entityName: string,
-  tableName: string,
-  ownerField: string,
-  ownerValue: string
-) {
-  try {
-    const { id } = req.params;
-    const method = req.method;
-
-    if (method === 'GET' && id) {
-      // Get single entity
-      const result = await sql`
-        SELECT * FROM ${sql.unsafe(tableName)}
-        WHERE id = ${id} AND ${sql.unsafe(ownerField)} = ${ownerValue}
-      `;
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: `${entityName} not found` });
-      }
-      return res.json(result.rows[0]);
-    }
-
-    if (method === 'GET') {
-      // List entities with filters
-      const filters = req.query;
-      let query = sql`SELECT * FROM ${sql.unsafe(tableName)} WHERE ${sql.unsafe(ownerField)} = ${ownerValue}`;
-
-      // Apply filters
-      if (filters.is_active !== undefined) {
-        query = sql`${query} AND is_active = ${filters.is_active === 'true'}`;
-      }
-      if (filters.wallet_id) {
-        query = sql`${query} AND wallet_id = ${filters.wallet_id as string}`;
-      }
-      if (filters.wallet_owner) {
-        query = sql`${query} AND wallet_owner = ${filters.wallet_owner as string}`;
-      }
-      if (filters.added_by) {
-        query = sql`${query} AND added_by = ${filters.added_by as string}`;
-      }
-      if (filters.type) {
-        query = sql`${query} AND type = ${filters.type as string}`;
-      }
-      if (filters.category) {
-        query = sql`${query} AND category = ${filters.category as string}`;
-      }
-      if (filters.month) {
-        query = sql`${query} AND month = ${filters.month as string}`;
-      }
-      if (filters.is_read !== undefined) {
-        query = sql`${query} AND is_read = ${filters.is_read === 'true'}`;
-      }
-
-      const result = await query;
-      return res.json(result.rows);
-    }
-
-    if (method === 'POST') {
-      // Create entity
-      const data = req.body;
-      const columns = Object.keys(data).join(', ');
-      const values = Object.values(data);
-      const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
-
-      const result = await sql`
-        INSERT INTO ${sql.unsafe(tableName)} (${sql.unsafe(columns)}, ${sql.unsafe(ownerField)})
-        VALUES (${sql.unsafe(placeholders)}, ${ownerValue})
-        RETURNING *
-      `;
-      return res.status(201).json(result.rows[0]);
-    }
-
-    if (method === 'PATCH') {
-      // Update entity
-      const data = req.body;
-      const updates = Object.keys(data)
-        .map((key, i) => `${key} = $${i + 1}`)
-        .join(', ');
-      const values = Object.values(data);
-      values.push(id);
-
-      const result = await sql`
-        UPDATE ${sql.unsafe(tableName)}
-        SET ${sql.unsafe(updates)}, updated_date = CURRENT_TIMESTAMP
-        WHERE id = $${values.length} AND ${sql.unsafe(ownerField)} = ${ownerValue}
-        RETURNING *
-      `;
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: `${entityName} not found` });
-      }
-      return res.json(result.rows[0]);
-    }
-
-    if (method === 'DELETE') {
-      // Delete entity (soft delete by setting is_active = false, or hard delete)
-      const result = await sql`
-        DELETE FROM ${sql.unsafe(tableName)}
-        WHERE id = ${id} AND ${sql.unsafe(ownerField)} = ${ownerValue}
-        RETURNING *
-      `;
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: `${entityName} not found` });
-      }
-      return res.json({ message: `${entityName} deleted successfully` });
-    }
-  } catch (error: any) {
-    console.error(`Entity ${entityName} error:`, error);
-    res.status(500).json({ error: error.message || `Failed to process ${entityName}` });
-  }
+// Helper function to get pg Pool for dynamic queries
+async function getPool() {
+  const { Pool } = await import('pg');
+  return new Pool({
+    connectionString: process.env.POSTGRES_URL,
+  });
 }
 
 // Wallet routes
@@ -275,32 +169,44 @@ router.patch('/transaction/:id', async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
-    // Build SET clause
+    // Build SET clause with parameterized values
     const setParts: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
     for (const [field, value] of Object.entries(filteredUpdates)) {
       if (value === null) {
         setParts.push(`${field} = NULL`);
-      } else if (typeof value === 'string') {
-        setParts.push(`${field} = '${value.replace(/'/g, "''")}'`);
       } else {
-        setParts.push(`${field} = ${value}`);
+        setParts.push(`${field} = $${paramIndex}`);
+        values.push(value);
+        paramIndex++;
       }
     }
     setParts.push(`updated_date = CURRENT_TIMESTAMP`);
 
+    // Add WHERE clause parameters
+    values.push(req.params.id);
+    values.push(req.user!.email);
+
     const query = `
       UPDATE transactions
       SET ${setParts.join(', ')}
-      WHERE id = '${req.params.id.replace(/'/g, "''")}'
-      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = '${req.user!.email.replace(/'/g, "''")}')
+      WHERE id = $${paramIndex}
+      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = $${paramIndex + 1})
       RETURNING *
     `;
 
-    const result = await sql.unsafe(query);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Transaction not found' });
+    const pool = await getPool();
+    try {
+      const result = await pool.query(query, values);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Transaction not found' });
+      }
+      res.json(result.rows[0]);
+    } finally {
+      await pool.end();
     }
-    res.json(result.rows[0]);
   } catch (error: any) {
     console.error('Update transaction error:', error);
     res.status(500).json({ error: error.message || 'Failed to update transaction' });
@@ -443,28 +349,38 @@ router.patch('/budget/:id', async (req: AuthRequest, res) => {
 
     // Build query with subquery for wallet ownership
     const setParts: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
     for (const [field, value] of Object.entries(filteredUpdates)) {
-      if (typeof value === 'string') {
-        setParts.push(`${field} = '${value.replace(/'/g, "''")}'`);
-      } else {
-        setParts.push(`${field} = ${value}`);
-      }
+      setParts.push(`${field} = $${paramIndex}`);
+      values.push(value);
+      paramIndex++;
     }
     setParts.push(`updated_date = CURRENT_TIMESTAMP`);
+
+    // Add WHERE clause parameters
+    values.push(req.params.id);
+    values.push(req.user!.email);
 
     const query = `
       UPDATE budgets
       SET ${setParts.join(', ')}
-      WHERE id = '${req.params.id.replace(/'/g, "''")}'
-      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = '${req.user!.email.replace(/'/g, "''")}')
+      WHERE id = $${paramIndex}
+      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = $${paramIndex + 1})
       RETURNING *
     `;
 
-    const result = await sql.unsafe(query);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Budget not found' });
+    const pool = await getPool();
+    try {
+      const result = await pool.query(query, values);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Budget not found' });
+      }
+      res.json(result.rows[0]);
+    } finally {
+      await pool.end();
     }
-    res.json(result.rows[0]);
   } catch (error: any) {
     console.error('Update budget error:', error);
     res.status(500).json({ error: error.message || 'Failed to update budget' });
@@ -539,30 +455,42 @@ router.patch('/savings-goal/:id', async (req: AuthRequest, res) => {
     }
 
     const setParts: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
     for (const [field, value] of Object.entries(filteredUpdates)) {
       if (value === null) {
         setParts.push(`${field} = NULL`);
-      } else if (typeof value === 'string') {
-        setParts.push(`${field} = '${value.replace(/'/g, "''")}'`);
       } else {
-        setParts.push(`${field} = ${value}`);
+        setParts.push(`${field} = $${paramIndex}`);
+        values.push(value);
+        paramIndex++;
       }
     }
     setParts.push(`updated_date = CURRENT_TIMESTAMP`);
 
+    // Add WHERE clause parameters
+    values.push(req.params.id);
+    values.push(req.user!.email);
+
     const query = `
       UPDATE savings_goals
       SET ${setParts.join(', ')}
-      WHERE id = '${req.params.id.replace(/'/g, "''")}'
-      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = '${req.user!.email.replace(/'/g, "''")}')
+      WHERE id = $${paramIndex}
+      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = $${paramIndex + 1})
       RETURNING *
     `;
 
-    const result = await sql.unsafe(query);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Savings goal not found' });
+    const pool = await getPool();
+    try {
+      const result = await pool.query(query, values);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Savings goal not found' });
+      }
+      res.json(result.rows[0]);
+    } finally {
+      await pool.end();
     }
-    res.json(result.rows[0]);
   } catch (error: any) {
     console.error('Update savings goal error:', error);
     res.status(500).json({ error: error.message || 'Failed to update savings goal' });
