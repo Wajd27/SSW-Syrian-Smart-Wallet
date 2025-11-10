@@ -18,12 +18,32 @@ async function getPool() {
 
 // Wallet routes
 router.get('/wallet', async (req: AuthRequest, res) => {
-  const result = await sql`
-    SELECT * FROM wallets
-    WHERE owner_email = ${req.user!.email}
-    ${req.query.is_active !== undefined ? sql`AND is_active = ${req.query.is_active === 'true'}` : sql``}
-    ${req.query.currency ? sql`AND currency = ${req.query.currency as string}` : sql``}
-  `;
+  let result;
+  if (req.query.is_active !== undefined && req.query.currency) {
+    result = await sql`
+      SELECT * FROM wallets
+      WHERE owner_email = ${req.user!.email}
+      AND is_active = ${req.query.is_active === 'true'}
+      AND currency = ${req.query.currency as string}
+    `;
+  } else if (req.query.is_active !== undefined) {
+    result = await sql`
+      SELECT * FROM wallets
+      WHERE owner_email = ${req.user!.email}
+      AND is_active = ${req.query.is_active === 'true'}
+    `;
+  } else if (req.query.currency) {
+    result = await sql`
+      SELECT * FROM wallets
+      WHERE owner_email = ${req.user!.email}
+      AND currency = ${req.query.currency as string}
+    `;
+  } else {
+    result = await sql`
+      SELECT * FROM wallets
+      WHERE owner_email = ${req.user!.email}
+    `;
+  }
   res.json(result.rows);
 });
 
@@ -89,30 +109,52 @@ router.delete('/wallet/:id', async (req: AuthRequest, res) => {
 
 // Transaction routes
 router.get('/transaction', async (req: AuthRequest, res) => {
-  let query = sql`
-    SELECT t.* FROM transactions t
-    INNER JOIN wallets w ON t.wallet_id = w.id
-    WHERE w.owner_email = ${req.user!.email}
-  `;
+  const conditions: string[] = [];
+  const values: any[] = [req.user!.email];
+  let paramIndex = 2;
 
   if (req.query.wallet_id) {
-    query = sql`${query} AND t.wallet_id = ${req.query.wallet_id as string}`;
+    conditions.push(`t.wallet_id = $${paramIndex}`);
+    values.push(req.query.wallet_id as string);
+    paramIndex++;
   }
   if (req.query.type) {
-    query = sql`${query} AND t.type = ${req.query.type as string}`;
+    conditions.push(`t.type = $${paramIndex}`);
+    values.push(req.query.type as string);
+    paramIndex++;
   }
   if (req.query.category) {
-    query = sql`${query} AND t.category = ${req.query.category as string}`;
+    conditions.push(`t.category = $${paramIndex}`);
+    values.push(req.query.category as string);
+    paramIndex++;
   }
   if (req.query.start_date) {
-    query = sql`${query} AND t.transaction_date >= ${req.query.start_date as string}`;
+    conditions.push(`t.transaction_date >= $${paramIndex}`);
+    values.push(req.query.start_date as string);
+    paramIndex++;
   }
   if (req.query.end_date) {
-    query = sql`${query} AND t.transaction_date <= ${req.query.end_date as string}`;
+    conditions.push(`t.transaction_date <= $${paramIndex}`);
+    values.push(req.query.end_date as string);
+    paramIndex++;
   }
 
-  const result = await query;
-  res.json(result.rows);
+  const whereClause = conditions.length > 0 
+    ? `WHERE w.owner_email = $1 AND ${conditions.join(' AND ')}`
+    : `WHERE w.owner_email = $1`;
+
+  const pool = await getPool();
+  try {
+    const result = await pool.query(
+      `SELECT t.* FROM transactions t
+       INNER JOIN wallets w ON t.wallet_id = w.id
+       ${whereClause}`,
+      values
+    );
+    res.json(result.rows);
+  } finally {
+    await pool.end();
+  }
 });
 
 router.get('/transaction/:id', async (req: AuthRequest, res) => {
@@ -231,11 +273,19 @@ router.delete('/transaction/:id', async (req: AuthRequest, res) => {
 
 // Recurring Transaction routes
 router.get('/recurring-transaction', async (req: AuthRequest, res) => {
-  const result = await sql`
-    SELECT * FROM recurring_transactions
-    WHERE wallet_owner = ${req.user!.email}
-    ${req.query.is_active !== undefined ? sql`AND is_active = ${req.query.is_active === 'true'}` : sql``}
-  `;
+  let result;
+  if (req.query.is_active !== undefined) {
+    result = await sql`
+      SELECT * FROM recurring_transactions
+      WHERE wallet_owner = ${req.user!.email}
+      AND is_active = ${req.query.is_active === 'true'}
+    `;
+  } else {
+    result = await sql`
+      SELECT * FROM recurring_transactions
+      WHERE wallet_owner = ${req.user!.email}
+    `;
+  }
   res.json(result.rows);
 });
 
@@ -298,18 +348,36 @@ router.delete('/recurring-transaction/:id', async (req: AuthRequest, res) => {
 
 // Budget routes
 router.get('/budget', async (req: AuthRequest, res) => {
-  let query = sql`
-    SELECT b.* FROM budgets b
-    INNER JOIN wallets w ON b.wallet_id = w.id
-    WHERE w.owner_email = ${req.user!.email}
-  `;
-  if (req.query.month) {
-    query = sql`${query} AND b.month = ${req.query.month as string}`;
+  let result;
+  if (req.query.month && req.query.category) {
+    result = await sql`
+      SELECT b.* FROM budgets b
+      INNER JOIN wallets w ON b.wallet_id = w.id
+      WHERE w.owner_email = ${req.user!.email}
+      AND b.month = ${req.query.month as string}
+      AND b.category = ${req.query.category as string}
+    `;
+  } else if (req.query.month) {
+    result = await sql`
+      SELECT b.* FROM budgets b
+      INNER JOIN wallets w ON b.wallet_id = w.id
+      WHERE w.owner_email = ${req.user!.email}
+      AND b.month = ${req.query.month as string}
+    `;
+  } else if (req.query.category) {
+    result = await sql`
+      SELECT b.* FROM budgets b
+      INNER JOIN wallets w ON b.wallet_id = w.id
+      WHERE w.owner_email = ${req.user!.email}
+      AND b.category = ${req.query.category as string}
+    `;
+  } else {
+    result = await sql`
+      SELECT b.* FROM budgets b
+      INNER JOIN wallets w ON b.wallet_id = w.id
+      WHERE w.owner_email = ${req.user!.email}
+    `;
   }
-  if (req.query.category) {
-    query = sql`${query} AND b.category = ${req.query.category as string}`;
-  }
-  const result = await query;
   res.json(result.rows);
 });
 
@@ -402,15 +470,21 @@ router.delete('/budget/:id', async (req: AuthRequest, res) => {
 
 // Savings Goal routes
 router.get('/savings-goal', async (req: AuthRequest, res) => {
-  let query = sql`
-    SELECT sg.* FROM savings_goals sg
-    INNER JOIN wallets w ON sg.wallet_id = w.id
-    WHERE w.owner_email = ${req.user!.email}
-  `;
+  let result;
   if (req.query.is_active !== undefined) {
-    query = sql`${query} AND sg.is_active = ${req.query.is_active === 'true'}`;
+    result = await sql`
+      SELECT sg.* FROM savings_goals sg
+      INNER JOIN wallets w ON sg.wallet_id = w.id
+      WHERE w.owner_email = ${req.user!.email}
+      AND sg.is_active = ${req.query.is_active === 'true'}
+    `;
+  } else {
+    result = await sql`
+      SELECT sg.* FROM savings_goals sg
+      INNER JOIN wallets w ON sg.wallet_id = w.id
+      WHERE w.owner_email = ${req.user!.email}
+    `;
   }
-  const result = await query;
   res.json(result.rows);
 });
 
@@ -512,17 +586,32 @@ router.delete('/savings-goal/:id', async (req: AuthRequest, res) => {
 
 // Investment routes
 router.get('/investment', async (req: AuthRequest, res) => {
-  let query = sql`
-    SELECT * FROM investments
-    WHERE wallet_owner = ${req.user!.email}
-  `;
-  if (req.query.is_active !== undefined) {
-    query = sql`${query} AND is_active = ${req.query.is_active === 'true'}`;
+  let result;
+  if (req.query.is_active !== undefined && req.query.savings_goal_id) {
+    result = await sql`
+      SELECT * FROM investments
+      WHERE wallet_owner = ${req.user!.email}
+      AND is_active = ${req.query.is_active === 'true'}
+      AND savings_goal_id = ${req.query.savings_goal_id as string}
+    `;
+  } else if (req.query.is_active !== undefined) {
+    result = await sql`
+      SELECT * FROM investments
+      WHERE wallet_owner = ${req.user!.email}
+      AND is_active = ${req.query.is_active === 'true'}
+    `;
+  } else if (req.query.savings_goal_id) {
+    result = await sql`
+      SELECT * FROM investments
+      WHERE wallet_owner = ${req.user!.email}
+      AND savings_goal_id = ${req.query.savings_goal_id as string}
+    `;
+  } else {
+    result = await sql`
+      SELECT * FROM investments
+      WHERE wallet_owner = ${req.user!.email}
+    `;
   }
-  if (req.query.savings_goal_id) {
-    query = sql`${query} AND savings_goal_id = ${req.query.savings_goal_id as string}`;
-  }
-  const result = await query;
   res.json(result.rows);
 });
 
@@ -585,14 +674,19 @@ router.delete('/investment/:id', async (req: AuthRequest, res) => {
 
 // Debt routes
 router.get('/debt', async (req: AuthRequest, res) => {
-  let query = sql`
-    SELECT * FROM debts
-    WHERE wallet_owner = ${req.user!.email}
-  `;
+  let result;
   if (req.query.is_active !== undefined) {
-    query = sql`${query} AND is_active = ${req.query.is_active === 'true'}`;
+    result = await sql`
+      SELECT * FROM debts
+      WHERE wallet_owner = ${req.user!.email}
+      AND is_active = ${req.query.is_active === 'true'}
+    `;
+  } else {
+    result = await sql`
+      SELECT * FROM debts
+      WHERE wallet_owner = ${req.user!.email}
+    `;
   }
-  const result = await query;
   res.json(result.rows);
 });
 
@@ -654,14 +748,19 @@ router.delete('/debt/:id', async (req: AuthRequest, res) => {
 
 // Family Member routes
 router.get('/family-member', async (req: AuthRequest, res) => {
-  let query = sql`
-    SELECT * FROM family_members
-    WHERE added_by = ${req.user!.email}
-  `;
+  let result;
   if (req.query.is_active !== undefined) {
-    query = sql`${query} AND is_active = ${req.query.is_active === 'true'}`;
+    result = await sql`
+      SELECT * FROM family_members
+      WHERE added_by = ${req.user!.email}
+      AND is_active = ${req.query.is_active === 'true'}
+    `;
+  } else {
+    result = await sql`
+      SELECT * FROM family_members
+      WHERE added_by = ${req.user!.email}
+    `;
   }
-  const result = await query;
   res.json(result.rows);
 });
 
@@ -716,11 +815,19 @@ router.delete('/family-member/:id', async (req: AuthRequest, res) => {
 
 // Exchange Rate routes
 router.get('/exchange-rate', async (req: AuthRequest, res) => {
-  const result = await sql`
-    SELECT * FROM exchange_rates
-    ORDER BY date DESC
-    ${req.query.limit ? sql`LIMIT ${parseInt(req.query.limit as string)}` : sql``}
-  `;
+  let result;
+  if (req.query.limit) {
+    result = await sql`
+      SELECT * FROM exchange_rates
+      ORDER BY date DESC
+      LIMIT ${parseInt(req.query.limit as string)}
+    `;
+  } else {
+    result = await sql`
+      SELECT * FROM exchange_rates
+      ORDER BY date DESC
+    `;
+  }
   res.json(result.rows);
 });
 
@@ -736,18 +843,36 @@ router.post('/exchange-rate', async (req: AuthRequest, res) => {
 
 // Notification routes
 router.get('/notification', async (req: AuthRequest, res) => {
-  let query = sql`
-    SELECT * FROM notifications
-    WHERE wallet_owner = ${req.user!.email}
-  `;
-  if (req.query.is_read !== undefined) {
-    query = sql`${query} AND is_read = ${req.query.is_read === 'true'}`;
+  let result;
+  if (req.query.is_read !== undefined && req.query.type) {
+    result = await sql`
+      SELECT * FROM notifications
+      WHERE wallet_owner = ${req.user!.email}
+      AND is_read = ${req.query.is_read === 'true'}
+      AND type = ${req.query.type as string}
+      ORDER BY created_date DESC
+    `;
+  } else if (req.query.is_read !== undefined) {
+    result = await sql`
+      SELECT * FROM notifications
+      WHERE wallet_owner = ${req.user!.email}
+      AND is_read = ${req.query.is_read === 'true'}
+      ORDER BY created_date DESC
+    `;
+  } else if (req.query.type) {
+    result = await sql`
+      SELECT * FROM notifications
+      WHERE wallet_owner = ${req.user!.email}
+      AND type = ${req.query.type as string}
+      ORDER BY created_date DESC
+    `;
+  } else {
+    result = await sql`
+      SELECT * FROM notifications
+      WHERE wallet_owner = ${req.user!.email}
+      ORDER BY created_date DESC
+    `;
   }
-  if (req.query.type) {
-    query = sql`${query} AND type = ${req.query.type as string}`;
-  }
-  query = sql`${query} ORDER BY created_date DESC`;
-  const result = await query;
   res.json(result.rows);
 });
 
