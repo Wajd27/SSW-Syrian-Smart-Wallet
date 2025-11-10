@@ -11,8 +11,41 @@ dotenv.config();
 const app = express();
 
 // Middleware
+// CORS configuration - allow both production and preview deployments
+const allowedOrigins = [
+  process.env.CORS_ORIGIN,
+  'https://ssw-syrian-smart-wallet.vercel.app',
+  'http://localhost:3000',
+].filter(Boolean).map(origin => origin?.replace(/\/+$/, '')); // Remove trailing slashes
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin matches allowed origins or is a Vercel preview deployment
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (!allowed) return false;
+      // Exact match
+      if (origin === allowed) return true;
+      // Match Vercel preview deployments (e.g., https://ssw-syrian-smart-wallet-*.vercel.app)
+      if (allowed.includes('vercel.app') && origin.includes('vercel.app')) {
+        const baseDomain = allowed.replace('https://', '').split('.')[0];
+        const originBase = origin.replace('https://', '').split('.')[0];
+        // Allow if it's the same project (starts with same base name)
+        if (originBase.startsWith(baseDomain.split('-')[0])) {
+          return true;
+        }
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());
