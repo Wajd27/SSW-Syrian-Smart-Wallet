@@ -1,10 +1,22 @@
 // Normalize API URL - remove trailing slash and ensure /api is present
 const getApiBaseUrl = (): string => {
   const envUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
-  // Remove trailing slash
-  const normalized = envUrl.replace(/\/+$/, '');
-  // Ensure it ends with /api
-  return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+  
+  // Remove all trailing slashes
+  let normalized = envUrl.replace(/\/+$/, '');
+  
+  // If URL doesn't end with /api, add it
+  if (!normalized.endsWith('/api')) {
+    // Remove any existing /api if it's in the middle
+    normalized = normalized.replace(/\/api\/?$/, '');
+    normalized = `${normalized}/api`;
+  }
+  
+  // Ensure no trailing slash
+  normalized = normalized.replace(/\/+$/, '');
+  
+  console.log('API Base URL:', normalized); // Debug log
+  return normalized;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -30,7 +42,10 @@ class ApiClient {
 
     // Ensure endpoint starts with / and API_BASE_URL doesn't end with /
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-    const url = `${API_BASE_URL}${cleanEndpoint}`;
+    // Remove any double slashes that might occur
+    const url = `${API_BASE_URL}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, '$1');
+    
+    console.log('Making request to:', url, 'Method:', options.method || 'GET'); // Debug log
     const config: RequestInit = {
       ...options,
       headers,
