@@ -5,18 +5,18 @@ let pool: Pool | null = null;
 
 function getPool(): Pool {
   if (!pool) {
-    const connectionString = process.env.POSTGRES_URL;
+    let connectionString = process.env.POSTGRES_URL;
     
     if (!connectionString) {
       throw new Error('POSTGRES_URL environment variable is not set');
     }
 
-    // Configure SSL for Supabase connections
-    // Supabase requires SSL but may use certificates not in the default chain
-    // Always use SSL with rejectUnauthorized: false for Supabase
+    // Check if this is a Supabase connection
     const isSupabase = connectionString.includes('supabase') || 
-                       connectionString.includes('sslmode=require') ||
                        connectionString.includes('pooler.supabase.com');
+
+    // Remove sslmode from connection string if present (we'll handle SSL separately)
+    connectionString = connectionString.replace(/[?&]sslmode=[^&]*/g, '');
 
     const poolConfig: any = {
       connectionString,
@@ -26,11 +26,18 @@ function getPool(): Pool {
     };
 
     // Always enable SSL for Supabase with rejectUnauthorized: false
+    // This is required because Supabase uses SSL but certificates may not be in default chain
     if (isSupabase) {
       poolConfig.ssl = {
         rejectUnauthorized: false,
       };
-      console.log('SSL configured for Supabase connection');
+      console.log('SSL configured for Supabase connection (rejectUnauthorized: false)');
+    } else if (connectionString.includes('sslmode=require')) {
+      // For other SSL connections, also use rejectUnauthorized: false
+      poolConfig.ssl = {
+        rejectUnauthorized: false,
+      };
+      console.log('SSL configured for connection (rejectUnauthorized: false)');
     }
 
     pool = new Pool(poolConfig);
