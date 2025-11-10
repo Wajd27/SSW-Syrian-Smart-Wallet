@@ -28,6 +28,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/entities', entityRoutes);
 app.use('/api/files', fileRoutes);
 
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found', path: req.path });
+});
+
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error:', err);
