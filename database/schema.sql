@@ -5,7 +5,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -19,7 +19,7 @@ CREATE TABLE users (
 );
 
 -- Wallets table
-CREATE TABLE wallets (
+CREATE TABLE IF NOT EXISTS wallets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -32,7 +32,7 @@ CREATE TABLE wallets (
 );
 
 -- Family Members table
-CREATE TABLE family_members (
+CREATE TABLE IF NOT EXISTS family_members (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -44,7 +44,7 @@ CREATE TABLE family_members (
 );
 
 -- Transactions table
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -63,7 +63,7 @@ CREATE TABLE transactions (
 );
 
 -- Recurring Transactions table
-CREATE TABLE recurring_transactions (
+CREATE TABLE IF NOT EXISTS recurring_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -83,7 +83,7 @@ CREATE TABLE recurring_transactions (
 );
 
 -- Budgets table
-CREATE TABLE budgets (
+CREATE TABLE IF NOT EXISTS budgets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -94,7 +94,7 @@ CREATE TABLE budgets (
 );
 
 -- Savings Goals table
-CREATE TABLE savings_goals (
+CREATE TABLE IF NOT EXISTS savings_goals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -109,7 +109,7 @@ CREATE TABLE savings_goals (
 );
 
 -- Investments table
-CREATE TABLE investments (
+CREATE TABLE IF NOT EXISTS investments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -129,7 +129,7 @@ CREATE TABLE investments (
 );
 
 -- Debts table
-CREATE TABLE debts (
+CREATE TABLE IF NOT EXISTS debts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -146,7 +146,7 @@ CREATE TABLE debts (
 );
 
 -- Exchange Rates table
-CREATE TABLE exchange_rates (
+CREATE TABLE IF NOT EXISTS exchange_rates (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -156,7 +156,7 @@ CREATE TABLE exchange_rates (
 );
 
 -- Notifications table
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -169,7 +169,7 @@ CREATE TABLE notifications (
 );
 
 -- AI Recommendations table
-CREATE TABLE ai_recommendations (
+CREATE TABLE IF NOT EXISTS ai_recommendations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -185,24 +185,24 @@ CREATE TABLE ai_recommendations (
 );
 
 -- Create indexes for better query performance
-CREATE INDEX idx_wallets_owner_email ON wallets(owner_email);
-CREATE INDEX idx_wallets_is_active ON wallets(is_active);
-CREATE INDEX idx_transactions_wallet_id ON transactions(wallet_id);
-CREATE INDEX idx_transactions_date ON transactions(transaction_date);
-CREATE INDEX idx_transactions_type ON transactions(type);
-CREATE INDEX idx_recurring_transactions_wallet_owner ON recurring_transactions(wallet_owner);
-CREATE INDEX idx_recurring_transactions_next_occurrence ON recurring_transactions(next_occurrence);
-CREATE INDEX idx_recurring_transactions_is_active ON recurring_transactions(is_active);
-CREATE INDEX idx_budgets_wallet_id ON budgets(wallet_id);
-CREATE INDEX idx_budgets_month ON budgets(month);
-CREATE INDEX idx_savings_goals_wallet_id ON savings_goals(wallet_id);
-CREATE INDEX idx_investments_wallet_owner ON investments(wallet_owner);
-CREATE INDEX idx_investments_savings_goal_id ON investments(savings_goal_id);
-CREATE INDEX idx_debts_wallet_owner ON debts(wallet_owner);
-CREATE INDEX idx_family_members_added_by ON family_members(added_by);
-CREATE INDEX idx_notifications_wallet_owner ON notifications(wallet_owner);
-CREATE INDEX idx_notifications_is_read ON notifications(is_read);
-CREATE INDEX idx_ai_recommendations_wallet_owner ON ai_recommendations(wallet_owner);
+CREATE INDEX IF NOT EXISTS idx_wallets_owner_email ON wallets(owner_email);
+CREATE INDEX IF NOT EXISTS idx_wallets_is_active ON wallets(is_active);
+CREATE INDEX IF NOT EXISTS idx_transactions_wallet_id ON transactions(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_recurring_transactions_wallet_owner ON recurring_transactions(wallet_owner);
+CREATE INDEX IF NOT EXISTS idx_recurring_transactions_next_occurrence ON recurring_transactions(next_occurrence);
+CREATE INDEX IF NOT EXISTS idx_recurring_transactions_is_active ON recurring_transactions(is_active);
+CREATE INDEX IF NOT EXISTS idx_budgets_wallet_id ON budgets(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_budgets_month ON budgets(month);
+CREATE INDEX IF NOT EXISTS idx_savings_goals_wallet_id ON savings_goals(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_investments_wallet_owner ON investments(wallet_owner);
+CREATE INDEX IF NOT EXISTS idx_investments_savings_goal_id ON investments(savings_goal_id);
+CREATE INDEX IF NOT EXISTS idx_debts_wallet_owner ON debts(wallet_owner);
+CREATE INDEX IF NOT EXISTS idx_family_members_added_by ON family_members(added_by);
+CREATE INDEX IF NOT EXISTS idx_notifications_wallet_owner ON notifications(wallet_owner);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_ai_recommendations_wallet_owner ON ai_recommendations(wallet_owner);
 
 -- Create function to update updated_date automatically
 CREATE OR REPLACE FUNCTION update_updated_date_column()
@@ -213,40 +213,52 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create triggers for updated_date
+-- Create triggers for updated_date (DROP IF EXISTS first to avoid errors)
+DROP TRIGGER IF EXISTS update_users_updated_date ON users;
 CREATE TRIGGER update_users_updated_date BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_wallets_updated_date ON wallets;
 CREATE TRIGGER update_wallets_updated_date BEFORE UPDATE ON wallets
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_transactions_updated_date ON transactions;
 CREATE TRIGGER update_transactions_updated_date BEFORE UPDATE ON transactions
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_recurring_transactions_updated_date ON recurring_transactions;
 CREATE TRIGGER update_recurring_transactions_updated_date BEFORE UPDATE ON recurring_transactions
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_budgets_updated_date ON budgets;
 CREATE TRIGGER update_budgets_updated_date BEFORE UPDATE ON budgets
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_savings_goals_updated_date ON savings_goals;
 CREATE TRIGGER update_savings_goals_updated_date BEFORE UPDATE ON savings_goals
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_investments_updated_date ON investments;
 CREATE TRIGGER update_investments_updated_date BEFORE UPDATE ON investments
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_debts_updated_date ON debts;
 CREATE TRIGGER update_debts_updated_date BEFORE UPDATE ON debts
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_family_members_updated_date ON family_members;
 CREATE TRIGGER update_family_members_updated_date BEFORE UPDATE ON family_members
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_notifications_updated_date ON notifications;
 CREATE TRIGGER update_notifications_updated_date BEFORE UPDATE ON notifications
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_ai_recommendations_updated_date ON ai_recommendations;
 CREATE TRIGGER update_ai_recommendations_updated_date BEFORE UPDATE ON ai_recommendations
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
+DROP TRIGGER IF EXISTS update_exchange_rates_updated_date ON exchange_rates;
 CREATE TRIGGER update_exchange_rates_updated_date BEFORE UPDATE ON exchange_rates
     FOR EACH ROW EXECUTE FUNCTION update_updated_date_column();
 
