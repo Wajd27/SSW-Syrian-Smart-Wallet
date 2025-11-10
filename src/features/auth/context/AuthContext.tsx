@@ -20,32 +20,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Use a flag to prevent hydration issues
+    let mounted = true;
+    
     const loadUser = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        try {
-          const currentUser = await authApi.getCurrentUser();
-          setUser(currentUser);
-        } catch (error) {
-          localStorage.removeItem('auth_token');
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          try {
+            const currentUser = await authApi.getCurrentUser();
+            if (mounted) {
+              setUser(currentUser);
+            }
+          } catch (error) {
+            // Token is invalid, remove it
+            localStorage.removeItem('auth_token');
+            if (mounted) {
+              setUser(null);
+            }
+          }
+        } else {
+          if (mounted) {
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+        if (mounted) {
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
         }
       }
-      setLoading(false);
     };
 
     loadUser();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
     setUser(response.user);
-    navigate('/');
+    // Use setTimeout to avoid navigation during render
+    setTimeout(() => navigate('/'), 0);
   };
 
   const register = async (email: string, password: string, fullName: string) => {
     const response = await authApi.register({ email, password, full_name: fullName });
     setUser(response.user);
-    navigate('/');
+    // Use setTimeout to avoid navigation during render
+    setTimeout(() => navigate('/'), 0);
   };
 
   const logout = async () => {
