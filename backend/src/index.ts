@@ -9,7 +9,6 @@ import fileRoutes from './routes/files.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
@@ -38,23 +37,12 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Initialize database and start server
-async function startServer() {
-  try {
-    await initDatabase();
-    console.log('Database connected successfully');
-    
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
+// Initialize database (non-blocking for serverless)
+initDatabase().catch((error) => {
+  console.error('Database initialization error:', error);
+  // Don't exit in serverless - let it retry on next invocation
+});
 
-startServer();
-
+// For Vercel serverless functions, export the app as handler
 export default app;
 
