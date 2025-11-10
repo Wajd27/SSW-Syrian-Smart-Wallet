@@ -1,4 +1,13 @@
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
+// Normalize API URL - remove trailing slash and ensure /api is present
+const getApiBaseUrl = (): string => {
+  const envUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
+  // Remove trailing slash
+  const normalized = envUrl.replace(/\/+$/, '');
+  // Ensure it ends with /api
+  return normalized.endsWith('/api') ? normalized : `${normalized}/api`;
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 class ApiClient {
   private getAuthToken(): string | null {
@@ -19,7 +28,9 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const url = `${API_BASE_URL}${endpoint}`;
+    // Ensure endpoint starts with / and API_BASE_URL doesn't end with /
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${API_BASE_URL}${cleanEndpoint}`;
     const config: RequestInit = {
       ...options,
       headers,
@@ -85,7 +96,8 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const response = await fetch(`${API_BASE_URL}${cleanEndpoint}`, {
       method: 'POST',
       headers,
       body: formData,
