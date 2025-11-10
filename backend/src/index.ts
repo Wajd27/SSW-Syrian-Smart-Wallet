@@ -49,5 +49,9 @@ initDatabase().catch((error) => {
 });
 
 // For Vercel serverless functions, export the app as handler
+// @vercel/node will automatically wrap this Express app
 export default app;
+
+// Also export as a named export for compatibility
+export { app };
 
