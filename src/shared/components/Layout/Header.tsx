@@ -34,7 +34,7 @@ function Header({ onMenuClick }: HeaderProps) {
                 />
               </svg>
             </button>
-            <h1 className="ml-2 lg:ml-0 text-xl font-semibold text-gray-900">
+            <h1 className="ml-2 lg:ml-0 rtl:ml-0 rtl:mr-2 rtl:lg:mr-0 text-xl font-semibold text-gray-900">
               {t('common.appName')}
             </h1>
           </div>

@@ -23,6 +23,12 @@
   [dir='ltr'] {
     direction: ltr;
   }
+
+  /* RTL-specific spacing fixes */
+  [dir='rtl'] .rtl\:space-x-reverse > * + * {
+    margin-right: 0.5rem;
+    margin-left: 0;
+  }
 }
 
 @layer components {

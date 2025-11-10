@@ -16,7 +16,7 @@ function Layout({ children }: LayoutProps) {
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <MobileMenu isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 lg:ml-64 p-4 lg:p-8">
+        <main className="flex-1 lg:ml-64 rtl:lg:ml-0 rtl:lg:mr-64 p-4 lg:p-8">
           {children}
         </main>
       </div>

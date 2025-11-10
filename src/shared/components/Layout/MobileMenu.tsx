@@ -45,7 +45,7 @@ function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:hidden">
+    <div className="fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 z-50 w-64 bg-white shadow-lg lg:hidden">
       <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900">{t('common.appName')}</h2>
         <button

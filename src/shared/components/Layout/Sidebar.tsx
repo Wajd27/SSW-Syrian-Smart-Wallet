@@ -45,7 +45,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-shrink-0">
-        <div className="flex flex-col w-64 fixed inset-y-0 pt-16 bg-white border-r border-gray-200">
+        <div className="flex flex-col w-64 fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 pt-16 bg-white border-r border-gray-200 rtl:border-r-0 rtl:border-l">
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
