@@ -18,8 +18,14 @@ router.post('/register', async (req, res) => {
     // Check database connection
     if (!process.env.POSTGRES_URL) {
       console.error('POSTGRES_URL environment variable is not set');
-      return res.status(500).json({ error: 'Database configuration error' });
+      return res.status(500).json({ 
+        error: 'Database configuration error',
+        message: 'POSTGRES_URL environment variable is missing'
+      });
     }
+    
+    console.log('POSTGRES_URL is set:', !!process.env.POSTGRES_URL);
+    console.log('Attempting to check for existing user...');
 
     // Check if user exists
     const existingUser = await sql`
@@ -76,15 +82,20 @@ router.post('/register', async (req, res) => {
       errorMessage = 'Database table missing. Please run the database schema.';
     }
     
-    res.status(500).json({ 
+    // Always include error code and a hint, even in production
+    const errorResponse: any = { 
       error: errorMessage,
-      ...(process.env.NODE_ENV !== 'production' && { 
-        details: error.stack,
-        type: error.constructor?.name,
-        code: error.code,
-        originalMessage: error.message
-      })
-    });
+      code: error.code || 'UNKNOWN_ERROR'
+    };
+    
+    // Add more details in non-production
+    if (process.env.NODE_ENV !== 'production') {
+      errorResponse.details = error.stack;
+      errorResponse.type = error.constructor?.name;
+      errorResponse.originalMessage = error.message;
+    }
+    
+    res.status(500).json(errorResponse);
   }
 });
 
