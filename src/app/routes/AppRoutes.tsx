@@ -1,5 +1,5 @@
-import React, { Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import ProtectedRoute from '@/shared/components/ProtectedRoute/ProtectedRoute';
 import Layout from '@/shared/components/Layout/Layout';
@@ -23,13 +23,47 @@ const AIAssistant = React.lazy(() => import('@/features/ai-assistant/pages/AIAss
 const Reports = React.lazy(() => import('@/features/reports/pages/Reports'));
 const Settings = React.lazy(() => import('@/features/settings/pages/Settings'));
 
-function AppRoutes() {
-  const { user } = useAuth();
+// Wrapper component to handle auth redirects
+function AuthRouteWrapper({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return <LoadingSpinner size="lg" className="min-h-screen" />;
+  }
+
+  if (user) {
+    return null; // Will redirect via useEffect
+  }
+
+  return <>{children}</>;
+}
+
+function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to="/" replace /> : <Register />} />
+      <Route
+        path="/login"
+        element={
+          <AuthRouteWrapper>
+            <Login />
+          </AuthRouteWrapper>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <AuthRouteWrapper>
+            <Register />
+          </AuthRouteWrapper>
+        }
+      />
       <Route
         path="/*"
         element={
