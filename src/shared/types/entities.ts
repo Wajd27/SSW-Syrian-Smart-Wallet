@@ -99,7 +99,7 @@ export interface FamilyMember extends BaseEntity {
   date_of_birth?: string;
   spending_limit?: number;
   spending_limit_currency?: string;
-  is_active: boolean;
+  is_active?: boolean; // Optional for backward compatibility with old data (null/undefined treated as true)
   added_by: string;
 }
 

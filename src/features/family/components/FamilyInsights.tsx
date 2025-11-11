@@ -18,7 +18,8 @@ function FamilyInsights({ members, transactions }: FamilyInsightsProps) {
     
     const memberStats = new Map();
     members.forEach((member) => {
-      if (member.is_active) {
+      // Handle old data: if is_active is null/undefined, treat as active (true)
+      if (member.is_active !== false) {
         memberStats.set(member.id, calculateMemberSpending(member, transactions));
       }
     });
@@ -27,7 +28,8 @@ function FamilyInsights({ members, transactions }: FamilyInsightsProps) {
 
     // Spending pattern detection
     members.forEach((member) => {
-      if (!member.is_active) return;
+      // Handle old data: if is_active is null/undefined, treat as active (true)
+      if (member.is_active === false) return;
       const stats = memberStats.get(member.id);
       if (!stats || stats.transactionCount === 0) return;
 
@@ -64,7 +66,8 @@ function FamilyInsights({ members, transactions }: FamilyInsightsProps) {
     const avgSpending = allSpending.reduce((sum, s) => sum + s, 0) / (allSpending.length || 1);
 
     members.forEach((member) => {
-      if (!member.is_active) return;
+      // Handle old data: if is_active is null/undefined, treat as active (true)
+      if (member.is_active === false) return;
       const stats = memberStats.get(member.id);
       if (!stats) return;
 

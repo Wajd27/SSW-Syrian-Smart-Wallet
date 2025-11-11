@@ -95,7 +95,9 @@ function Family() {
     
     const statsMap = new Map();
     stableMembers.forEach((member) => {
-      if (member && member.is_active && member.id) {
+      // Handle old data: if is_active is null/undefined, treat as active (true)
+      const isActive = member?.is_active !== false; // true if null/undefined/true
+      if (member && member.id && isActive) {
         try {
           const stats = calculateMemberSpending(member, stableTransactions, exchangeRate);
           if (stats) {
@@ -221,11 +223,12 @@ function Family() {
 
   // Memoize activeMembers to prevent creating new array on each render
   // Use stable array reference
+  // Handle old data: if is_active is null/undefined, treat as active (true)
   const activeMembers = useMemo(() => {
     if (!Array.isArray(stableMembers) || stableMembers.length === 0) {
       return [];
     }
-    return stableMembers.filter((m) => m && m.is_active);
+    return stableMembers.filter((m) => m && m.is_active !== false); // Include if null/undefined/true
   }, [stableMembers]);
 
   // Find top spender
