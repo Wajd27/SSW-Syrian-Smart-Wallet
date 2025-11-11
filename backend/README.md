@@ -18,6 +18,9 @@ cp .env.example .env
 - `POSTGRES_URL`: Your PostgreSQL connection string
 - `JWT_SECRET`: Secret key for JWT tokens
 - `CORS_ORIGIN`: Frontend URL (e.g., http://localhost:3000)
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key (for server-side operations)
+- `SUPABASE_BUCKET_NAME`: Storage bucket name (default: `uploads`)
 
 4. Run database migrations:
 ```bash
@@ -59,8 +62,15 @@ Available entities:
 - ai-recommendation
 
 ### Files
-- `POST /api/files/upload` - Upload file
+- `POST /api/files/upload` - Upload file (max 2MB, any MIME type)
 - `POST /api/files/signed-url` - Get signed URL for file
+
+**Note:** File uploads use Supabase Storage. Make sure to:
+1. Create a bucket named `uploads` (or set `SUPABASE_BUCKET_NAME`)
+2. Configure bucket policies in Supabase Dashboard:
+   - **Public Access**: Set to `public` if you want public URLs, or `private` for signed URLs only
+   - **File Size Limit**: Set to 2MB (2097152 bytes)
+   - **Allowed MIME Types**: Leave empty or set to `*/*` to allow any file type
 
 ## Deployment to Vercel
 
@@ -79,8 +89,11 @@ Or connect your GitHub repository to Vercel for automatic deployments.
 ## Environment Variables for Vercel
 
 Set these in your Vercel project settings:
-- `POSTGRES_URL` - From Vercel Postgres
+- `POSTGRES_URL` - From Vercel Postgres or Supabase
 - `JWT_SECRET` - Generate a secure random string
 - `CORS_ORIGIN` - Your frontend URL
 - `NODE_ENV` - `production`
+- `SUPABASE_URL` - Your Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
+- `SUPABASE_BUCKET_NAME` - Storage bucket name (default: `uploads`)
 

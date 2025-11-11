@@ -10,7 +10,7 @@ import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 
 function BudgetWidget() {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, selectedFamilyMember } = useAuth();
 
   const { data: wallets } = useQuery({
     queryKey: ['wallets', user?.email],
@@ -35,14 +35,23 @@ function BudgetWidget() {
   });
 
   const { data: transactions } = useQuery({
-    queryKey: ['transactions', 'budget-widget', user?.email],
+    queryKey: ['transactions', 'budget-widget', user?.email, selectedFamilyMember],
     queryFn: async () => {
       if (!user?.email || !wallets) return [];
       const walletIds = wallets.map((w) => w.id);
       const allTransactions = await Promise.all(
         walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
       );
-      return allTransactions.flat();
+      let filtered = allTransactions.flat();
+      
+      // Filter by selected family member if not viewing as owner
+      if (selectedFamilyMember && selectedFamilyMember !== 'owner') {
+        filtered = filtered.filter((t) => t.family_member_id === selectedFamilyMember.id);
+      } else if (selectedFamilyMember === 'owner') {
+        filtered = filtered.filter((t) => !t.family_member_id);
+      }
+      
+      return filtered;
     },
     enabled: !!user?.email && !!wallets,
   });

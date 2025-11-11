@@ -13,17 +13,27 @@ import { formatCurrency } from '@/shared/lib/formatters';
 import { useState, useMemo } from 'react';
 import Button from '@/shared/components/Button/Button';
 import Input from '@/shared/components/Forms/Input';
+import Select from '@/shared/components/Forms/Select';
 
 function Reports() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const [filters, setFilters] = useState({ start_date: '', end_date: '' });
+  const [filters, setFilters] = useState({ start_date: '', end_date: '', family_member_id: '' });
 
   const { data: wallets } = useQuery({
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
+    },
+    enabled: !!user?.email,
+  });
+
+  const { data: familyMembers } = useQuery({
+    queryKey: ['family-members', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
   });
@@ -42,6 +52,13 @@ function Reports() {
       }
       if (filters.end_date) {
         list = list.filter((t) => t.transaction_date <= filters.end_date);
+      }
+      if (filters.family_member_id) {
+        if (filters.family_member_id === 'owner') {
+          list = list.filter((t) => !t.family_member_id);
+        } else {
+          list = list.filter((t) => t.family_member_id === filters.family_member_id);
+        }
       }
       return list;
     },
@@ -125,6 +142,77 @@ function Reports() {
     };
   }) || [];
 
+  // Family Spending Comparison Data
+  const familySpendingComparison = useMemo(() => {
+    if (!familyMembers || !transactions || filters.family_member_id) return [];
+    
+    const memberSpending = familyMembers.map((member) => {
+      const memberTransactions = transactions.filter(
+        (t) => t.family_member_id === member.id && t.type === 'expense'
+      );
+      const total = memberTransactions.reduce((sum, t) => {
+        return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
+      }, 0);
+      return {
+        name: member.name,
+        Spending: total,
+      };
+    });
+
+    // Add owner spending
+    const ownerTransactions = transactions.filter(
+      (t) => !t.family_member_id && t.type === 'expense'
+    );
+    const ownerTotal = ownerTransactions.reduce((sum, t) => {
+      return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
+    }, 0);
+    
+    const result = [
+      { name: user?.full_name || t('family.ownerOnly'), Spending: ownerTotal },
+      ...memberSpending,
+    ];
+    
+    return result.filter((item) => item.Spending > 0);
+  }, [familyMembers, transactions, filters.family_member_id, user, t]);
+
+  // Family Spending Trends (multiple lines)
+  const familySpendingTrends = useMemo(() => {
+    if (!familyMembers || !transactions || filters.family_member_id) return [];
+    
+    const result: any[] = monthBuckets.map((month) => {
+      const data: any = {
+        name: new Date(month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+      };
+      
+      // Owner spending
+      const ownerMonthTransactions = transactions.filter(
+        (t) => !t.family_member_id && t.type === 'expense' && t.transaction_date.startsWith(month)
+      );
+      const ownerTotal = ownerMonthTransactions.reduce((sum, t) => {
+        return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
+      }, 0);
+      data[user?.full_name || t('family.ownerOnly')] = ownerTotal;
+      
+      // Family member spending
+      familyMembers.forEach((member) => {
+        const memberMonthTransactions = transactions.filter(
+          (t) =>
+            t.family_member_id === member.id &&
+            t.type === 'expense' &&
+            t.transaction_date.startsWith(month)
+        );
+        const memberTotal = memberMonthTransactions.reduce((sum, t) => {
+          return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
+        }, 0);
+        data[member.name] = memberTotal;
+      });
+      
+      return data;
+    });
+    
+    return result;
+  }, [familyMembers, transactions, monthBuckets, filters.family_member_id, user, t]);
+
   return (
     <PullToRefresh queryKeys={['wallets', 'transactions', 'investments', 'reports']}>
       <div className="space-y-6">
@@ -135,7 +223,7 @@ function Reports() {
 
       {/* Filters and Export */}
       <Card>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <Input
             label={t('common.startDate')}
             type="date"
@@ -148,8 +236,18 @@ function Reports() {
             value={filters.end_date}
             onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
           />
+          <Select
+            label={t('family.filterByMember')}
+            value={filters.family_member_id}
+            onChange={(e) => setFilters({ ...filters, family_member_id: e.target.value })}
+            options={[
+              { value: '', label: t('common.all') },
+              { value: 'owner', label: t('family.ownerOnly') },
+              ...(familyMembers?.map((m) => ({ value: m.id, label: m.name })) || []),
+            ]}
+          />
           <div className="md:col-span-3 flex items-end justify-end space-x-2 rtl:space-x-reverse">
-            <Button variant="secondary" onClick={() => setFilters({ start_date: '', end_date: '' })}>
+            <Button variant="secondary" onClick={() => setFilters({ start_date: '', end_date: '', family_member_id: '' })}>
               {t('common.clear') || 'Clear'}
             </Button>
             <Button variant="outline" onClick={() => exportCSV(transactions || [])}>
@@ -206,6 +304,34 @@ function Reports() {
         <Card title={t('reports.investmentPerformance')}>
           <BarChart data={investmentPerformance} dataKeys={['Return']} height={300} />
         </Card>
+      )}
+
+      {/* Family Comparison Charts - Only show when not filtering by specific member */}
+      {!filters.family_member_id && familyMembers && familyMembers.length > 0 && (
+        <>
+          {familySpendingComparison.length > 0 && (
+            <Card title={t('family.memberComparison')}>
+              <BarChart
+                data={familySpendingComparison}
+                dataKeys={['Spending']}
+                height={300}
+              />
+            </Card>
+          )}
+          
+          {familySpendingTrends.length > 0 && (
+            <Card title={t('family.spendingTrend')}>
+              <LineChart
+                data={familySpendingTrends}
+                dataKeys={[
+                  user?.full_name || t('family.ownerOnly'),
+                  ...(familyMembers.map((m) => m.name) || []),
+                ]}
+                height={300}
+              />
+            </Card>
+          )}
+        </>
       )}
       </div>
     </PullToRefresh>

@@ -46,6 +46,16 @@ function NotificationMonitor() {
     refetchInterval: 5 * 60 * 1000,
   });
 
+  const { data: familyMembers } = useQuery({
+    queryKey: ['family-members', 'monitor', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return entities.familyMember.filter({ added_by: user.email, is_active: true });
+    },
+    enabled: !!user?.email,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const { data: transactions } = useQuery({
     queryKey: ['transactions', 'monitor', user?.email],
     queryFn: async () => {
@@ -190,6 +200,75 @@ function NotificationMonitor() {
         });
       }
 
+      // Check family member spending limits
+      if (notificationSettings.spending_limit_alerts !== false && familyMembers && transactions) {
+        const now = new Date();
+        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        
+        familyMembers.forEach(async (member) => {
+          if (!member.spending_limit) return;
+          
+          const memberTransactions = transactions.filter(
+            (t) =>
+              t.family_member_id === member.id &&
+              t.type === 'expense' &&
+              t.transaction_date.startsWith(currentMonth)
+          );
+          
+          const spent = memberTransactions.reduce((sum, t) => {
+            // Convert transaction amount to limit currency
+            let amount = 0;
+            if (member.spending_limit_currency === 'USD') {
+              amount = t.primary_currency === 'USD' ? t.amount_usd : (t.amount_syp / (user?.last_exchange_rate || 13000));
+            } else {
+              amount = t.primary_currency === 'SYP' ? t.amount_syp : (t.amount_usd * (user?.last_exchange_rate || 13000));
+            }
+            return sum + amount;
+          }, 0);
+          
+          const percentage = (spent / member.spending_limit) * 100;
+          
+          // Check for 80% and 100% thresholds
+          if (percentage >= 80 && percentage < 85) {
+            const existing = existingNotifications?.find(
+              (n) =>
+                n.type === 'spending_limit_alert' &&
+                n.action_url?.includes(`member=${member.id}`) &&
+                n.message?.includes('80%')
+            );
+            
+            if (!existing) {
+              await createNotificationMutation.mutateAsync({
+                title: 'Spending Limit Alert',
+                message: `${member.name} has reached 80% of their spending limit (${percentage.toFixed(1)}%)`,
+                type: 'spending_limit_alert',
+                is_read: false,
+                action_url: `/family?member=${member.id}`,
+                wallet_owner: user.email,
+              });
+            }
+          } else if (percentage >= 100) {
+            const existing = existingNotifications?.find(
+              (n) =>
+                n.type === 'spending_limit_alert' &&
+                n.action_url?.includes(`member=${member.id}`) &&
+                n.message?.includes('exceeded')
+            );
+            
+            if (!existing) {
+              await createNotificationMutation.mutateAsync({
+                title: 'Spending Limit Exceeded',
+                message: `${member.name} has exceeded their spending limit by ${((percentage - 100) * member.spending_limit / 100).toFixed(2)}`,
+                type: 'spending_limit_alert',
+                is_read: false,
+                action_url: `/family?member=${member.id}`,
+                wallet_owner: user.email,
+              });
+            }
+          }
+        });
+      }
+
       // Check savings goals milestones
       if (notificationSettings.savings_milestones !== false) {
         savingsGoals?.forEach(async (goal) => {
@@ -222,6 +301,7 @@ function NotificationMonitor() {
     recurringTransactions,
     budgets,
     transactions,
+    familyMembers,
     savingsGoals,
     investments,
     userData,

@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS family_members (
     name VARCHAR(255) NOT NULL,
     relationship VARCHAR(100),
     date_of_birth DATE,
+    spending_limit DECIMAL(15, 2),
+    spending_limit_currency VARCHAR(3) DEFAULT 'SYP',
     is_active BOOLEAN DEFAULT true,
     added_by VARCHAR(255) NOT NULL REFERENCES users(email) ON DELETE CASCADE
 );
@@ -90,7 +92,8 @@ CREATE TABLE IF NOT EXISTS budgets (
     wallet_id UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
     category VARCHAR(100) NOT NULL,
     amount DECIMAL(15, 2) NOT NULL,
-    month VARCHAR(7) NOT NULL -- YYYY-MM format
+    month VARCHAR(7) NOT NULL, -- YYYY-MM format
+    family_member_id UUID REFERENCES family_members(id) ON DELETE SET NULL
 );
 
 -- Savings Goals table

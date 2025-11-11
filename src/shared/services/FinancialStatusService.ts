@@ -239,14 +239,23 @@ export class FinancialStatusService {
     savingsGoals: SavingsGoal[],
     investments: Investment[],
     debts: Debt[],
-    recurringTransactions: any[]
+    recurringTransactions: any[],
+    familyMemberId?: string | null
   ): FinancialStatus {
+    // Filter transactions by family member if specified
+    let filteredTransactions = transactions;
+    if (familyMemberId) {
+      filteredTransactions = transactions.filter((t) => t.family_member_id === familyMemberId);
+    } else if (familyMemberId === null) {
+      // null means "owner only" - filter out transactions with family_member_id
+      filteredTransactions = transactions.filter((t) => !t.family_member_id);
+    }
     const currentMonth = new Date().toISOString().slice(0, 7);
-    const cashFlow = this.calculateCashFlow(transactions, recurringTransactions, currentMonth);
-    const netWorth = this.calculateNetWorth(wallets, transactions, investments, debts);
+    const cashFlow = this.calculateCashFlow(filteredTransactions, recurringTransactions, currentMonth);
+    const netWorth = this.calculateNetWorth(wallets, filteredTransactions, investments, debts);
     
     const totalAssets = wallets.reduce((sum, w) => {
-      const walletTransactions = transactions.filter((t) => t.wallet_id === w.id);
+      const walletTransactions = filteredTransactions.filter((t) => t.wallet_id === w.id);
       const balance = walletTransactions.reduce((bal, t) => {
         const amount = t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp;
         return bal + (t.type === 'income' ? amount : -amount);
@@ -272,12 +281,13 @@ export class FinancialStatusService {
     // Calculate budget adherence
     const currentMonthBudgets = budgets.filter((b) => b.month === currentMonth);
     const budgetsNotExceeded = currentMonthBudgets.filter((budget) => {
-      const budgetTransactions = transactions.filter(
+      const budgetTransactions = filteredTransactions.filter(
         (t) =>
           t.wallet_id === budget.wallet_id &&
           t.transaction_date?.startsWith(budget.month) &&
           t.type === 'expense' &&
-          t.category === budget.category
+          t.category === budget.category &&
+          (budget.family_member_id ? t.family_member_id === budget.family_member_id : !t.family_member_id)
       );
       const spent = budgetTransactions.reduce(
         (sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp),

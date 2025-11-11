@@ -8,6 +8,7 @@ import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 // Auth pages
 const Login = React.lazy(() => import('@/features/auth/pages/Login'));
 const Register = React.lazy(() => import('@/features/auth/pages/Register'));
+const FamilyMemberSelector = React.lazy(() => import('@/features/auth/pages/FamilyMemberSelector'));
 
 // Feature pages
 const Dashboard = React.lazy(() => import('@/features/dashboard/pages/Dashboard'));
@@ -97,6 +98,7 @@ function AppRoutes() {
             <Layout>
               <Suspense fallback={<LoadingSpinner size="lg" className="min-h-screen" />}>
                 <Routes>
+                  <Route path="/select-family-member" element={<FamilyMemberSelector />} />
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/wallets" element={<Wallets />} />
                   <Route path="/transactions" element={<Transactions />} />

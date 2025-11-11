@@ -1,4 +1,4 @@
-import { sql } from './connection.js';
+import { db } from './connection.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,7 +23,7 @@ async function runMigrations() {
     for (const statement of statements) {
       if (statement.trim()) {
         try {
-          await sql.unsafe(statement);
+          await db.query(statement);
           console.log('✓ Executed statement');
         } catch (error: any) {
           // Ignore "already exists" errors

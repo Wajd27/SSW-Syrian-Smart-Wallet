@@ -21,6 +21,7 @@ export interface NotificationSettings {
   budget_threshold?: number; // percentage
   savings_milestones?: boolean;
   investment_updates?: boolean;
+  spending_limit_alerts?: boolean;
   // Feedback preferences
   haptic_feedback_enabled?: boolean;
   sound_effects_enabled?: boolean;
@@ -76,6 +77,7 @@ export interface Budget extends BaseEntity {
   category: string;
   amount: number;
   month: string; // YYYY-MM format
+  family_member_id?: string;
 }
 
 // SavingsGoal Entity
@@ -95,6 +97,8 @@ export interface FamilyMember extends BaseEntity {
   name: string;
   relationship: string;
   date_of_birth?: string;
+  spending_limit?: number;
+  spending_limit_currency?: string;
   is_active: boolean;
   added_by: string;
 }

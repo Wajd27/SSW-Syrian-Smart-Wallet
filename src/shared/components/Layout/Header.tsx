@@ -5,6 +5,7 @@ import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import NotificationBell from '../NotificationBell/NotificationBell';
 import InstallButton from '../InstallButton/InstallButton';
 import UserGuide from '../UserGuide/UserGuide';
+import FamilyMemberSwitcher from '../FamilyMemberSwitcher/FamilyMemberSwitcher';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 interface HeaderProps {
@@ -62,6 +63,7 @@ function Header({ onMenuClick }: HeaderProps) {
             <InstallButton />
             <NotificationBell />
             <LanguageSwitcher />
+            <FamilyMemberSwitcher />
             {user && (
               <div className="hidden sm:flex items-center space-x-2 rtl:space-x-reverse">
                 <div className="text-sm text-gray-700 font-medium">

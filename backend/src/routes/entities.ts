@@ -392,8 +392,8 @@ router.post('/budget', async (req: AuthRequest, res) => {
   }
 
   const result = await sql`
-    INSERT INTO budgets (wallet_id, category, amount, month)
-    VALUES (${data.wallet_id}, ${data.category}, ${data.amount}, ${data.month})
+    INSERT INTO budgets (wallet_id, category, amount, month, family_member_id)
+    VALUES (${data.wallet_id}, ${data.category}, ${data.amount}, ${data.month}, ${data.family_member_id || null})
     RETURNING *
   `;
   res.status(201).json(result.rows[0]);
@@ -402,7 +402,7 @@ router.post('/budget', async (req: AuthRequest, res) => {
 router.patch('/budget/:id', async (req: AuthRequest, res) => {
   try {
     const updates = req.body;
-    const allowedFields = ['category', 'amount', 'month'];
+    const allowedFields = ['category', 'amount', 'month', 'family_member_id'];
     const filteredUpdates: Record<string, any> = {};
     
     for (const field of allowedFields) {
@@ -767,8 +767,8 @@ router.get('/family-member', async (req: AuthRequest, res) => {
 router.post('/family-member', async (req: AuthRequest, res) => {
   const data = { ...req.body, added_by: req.user!.email };
   const result = await sql`
-    INSERT INTO family_members (name, relationship, date_of_birth, is_active, added_by)
-    VALUES (${data.name}, ${data.relationship || null}, ${data.date_of_birth || null}, ${data.is_active ?? true}, ${data.added_by})
+    INSERT INTO family_members (name, relationship, date_of_birth, spending_limit, spending_limit_currency, is_active, added_by)
+    VALUES (${data.name}, ${data.relationship || null}, ${data.date_of_birth || null}, ${data.spending_limit || null}, ${data.spending_limit_currency || 'SYP'}, ${data.is_active ?? true}, ${data.added_by})
     RETURNING *
   `;
   res.status(201).json(result.rows[0]);
@@ -777,7 +777,7 @@ router.post('/family-member', async (req: AuthRequest, res) => {
 router.patch('/family-member/:id', async (req: AuthRequest, res) => {
   try {
     const updates = req.body;
-    const allowedFields = ['name', 'relationship', 'date_of_birth', 'is_active'];
+    const allowedFields = ['name', 'relationship', 'date_of_birth', 'spending_limit', 'spending_limit_currency', 'is_active'];
     const filteredUpdates: Record<string, any> = {};
     
     for (const field of allowedFields) {

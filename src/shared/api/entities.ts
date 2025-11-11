@@ -234,5 +234,15 @@ export const entities = {
       return apiClient.patch<AIRecommendation>(`/entities/ai-recommendation/${id}`, data);
     },
   },
+
+  // File operations
+  file: {
+    async upload(file: File): Promise<{ url: string; filename: string; size: number; mimetype: string }> {
+      return apiClient.uploadFile('/files/upload', file);
+    },
+    async getSignedUrl(uri: string): Promise<{ signed_url: string }> {
+      return apiClient.post<{ signed_url: string }>('/files/signed-url', { uri });
+    },
+  },
 };
 

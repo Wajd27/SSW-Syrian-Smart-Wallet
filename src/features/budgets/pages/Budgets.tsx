@@ -31,6 +31,7 @@ function Budgets() {
     category: '',
     amount: 0,
     month: new Date().toISOString().slice(0, 7),
+    family_member_id: '',
   });
 
   const [templateForm, setTemplateForm] = useState({
@@ -45,6 +46,15 @@ function Budgets() {
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
+    },
+    enabled: !!user?.email,
+  });
+
+  const { data: familyMembers } = useQuery({
+    queryKey: ['family-members', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
   });
@@ -134,6 +144,7 @@ function Budgets() {
       category: '',
       amount: 0,
       month: new Date().toISOString().slice(0, 7),
+      family_member_id: '',
     });
   };
 
@@ -145,6 +156,7 @@ function Budgets() {
         category: budget.category,
         amount: budget.amount,
         month: budget.month,
+        family_member_id: budget.family_member_id || '',
       });
     } else {
       setEditingBudget(null);
@@ -172,7 +184,8 @@ function Budgets() {
           t.wallet_id === budget.wallet_id &&
           t.transaction_date.startsWith(budget.month) &&
           t.type === 'expense' &&
-          t.category === budget.category
+          t.category === budget.category &&
+          (budget.family_member_id ? t.family_member_id === budget.family_member_id : !t.family_member_id)
       ) || [];
     const spent = monthTransactions.reduce(
       (sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp),
@@ -321,14 +334,23 @@ function Budgets() {
               style={{ animationDelay: `${index * 0.05}s` }}
             >
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-800">{budget.category}</h3>
-                <p className="text-sm text-gray-600">{wallet?.name}</p>
-                <p className="text-sm text-gray-500">
-                  {new Date(budget.month + '-01').toLocaleDateString('en-US', {
-                    month: 'long',
-                    year: 'numeric',
-                  })}
-                </p>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">{budget.category}</h3>
+                    <p className="text-sm text-gray-600">{wallet?.name}</p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(budget.month + '-01').toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                  {budget.family_member_id && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
+                      👤 {familyMembers?.find((m) => m.id === budget.family_member_id)?.name || t('family.member')}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
@@ -451,6 +473,15 @@ function Budgets() {
             value={formData.month}
             onChange={(e) => setFormData({ ...formData, month: e.target.value })}
             required
+          />
+          <Select
+            label={t('family.filterByMember')}
+            value={formData.family_member_id}
+            onChange={(e) => setFormData({ ...formData, family_member_id: e.target.value })}
+            options={[
+              { value: '', label: t('family.ownerOnly') },
+              ...(familyMembers?.map((m) => ({ value: m.id, label: m.name })) || []),
+            ]}
           />
           <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse pt-4">
             <Button

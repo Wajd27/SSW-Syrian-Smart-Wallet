@@ -36,6 +36,7 @@ function Transactions() {
     category: '',
     start_date: '',
     end_date: '',
+    family_member_id: searchParams.get('family_member_id') || '',
   });
   // Initialize form data with user's last exchange rate or fallback
   const getDefaultExchangeRate = () => {
@@ -103,10 +104,24 @@ function Transactions() {
             ...(filters.category && { category: filters.category }),
             ...(filters.start_date && { start_date: filters.start_date }),
             ...(filters.end_date && { end_date: filters.end_date }),
+            ...(filters.family_member_id && { family_member_id: filters.family_member_id }),
           })
         )
       );
-      return allTransactions.flat().sort((a, b) => 
+      let filtered = allTransactions.flat();
+      
+      // Additional client-side filtering for family_member_id if needed
+      if (filters.family_member_id) {
+        if (filters.family_member_id === 'owner') {
+          // Filter for transactions without family_member_id (owner only)
+          filtered = filtered.filter((t) => !t.family_member_id);
+        } else {
+          // Filter for specific family member
+          filtered = filtered.filter((t) => t.family_member_id === filters.family_member_id);
+        }
+      }
+      
+      return filtered.sort((a, b) => 
         new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
       );
     },
@@ -325,7 +340,7 @@ function Transactions() {
 
       {/* Filters */}
       <Card>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <Select
             label={t('wallets.title')}
             value={filters.wallet_id}
@@ -351,6 +366,16 @@ function Transactions() {
             onChange={(e) => setFilters({ ...filters, category: e.target.value })}
             placeholder={t('common.search')}
           />
+          <Select
+            label={t('family.filterByMember')}
+            value={filters.family_member_id}
+            onChange={(e) => setFilters({ ...filters, family_member_id: e.target.value })}
+            options={[
+              { value: '', label: t('common.all') },
+              { value: 'owner', label: t('family.ownerOnly') },
+              ...(familyMembers?.map((m) => ({ value: m.id, label: m.name })) || []),
+            ]}
+          />
           <DatePicker
             label={t('common.startDate')}
             value={filters.start_date}
@@ -362,6 +387,42 @@ function Transactions() {
             onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
           />
         </div>
+
+        {/* Quick Filter Buttons */}
+        {familyMembers && familyMembers.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="text-sm text-gray-600 mb-2">{t('family.quickFilters')}</div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filters.family_member_id === '' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilters({ ...filters, family_member_id: '' })}
+              >
+                {t('common.all')}
+              </Button>
+              <Button
+                variant={filters.family_member_id === 'owner' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilters({ ...filters, family_member_id: 'owner' })}
+              >
+                {t('family.ownerOnly')}
+              </Button>
+              {familyMembers.map((member) => {
+                const memberTransactions = transactions?.filter((t) => t.family_member_id === member.id) || [];
+                return (
+                  <Button
+                    key={member.id}
+                    variant={filters.family_member_id === member.id ? 'primary' : 'secondary'}
+                    size="sm"
+                    onClick={() => setFilters({ ...filters, family_member_id: member.id })}
+                  >
+                    {member.name} ({memberTransactions.length})
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Transactions List */}
@@ -418,6 +479,11 @@ function Transactions() {
                           : budgetStatus.status === 'at-risk'
                           ? '⚠️ At Risk'
                           : '✓ On Track'}
+                      </span>
+                    )}
+                    {transaction.family_member_id && (
+                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
+                        👤 {familyMembers?.find((m) => m.id === transaction.family_member_id)?.name || t('family.member')}
                       </span>
                     )}
                   </div>

@@ -1,41 +1,34 @@
 import express from 'express';
 import multer from 'multer';
+import { createClient } from '@supabase/supabase-js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { sql } from '../db/connection.js';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // In production, use cloud storage (Vercel Blob, AWS S3, etc.)
-    // For now, we'll use a simple approach
-    cb(null, process.env.UPLOAD_DIR || './uploads');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  },
-});
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseBucket = process.env.SUPABASE_BUCKET_NAME || 'uploads';
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.warn('Warning: Supabase credentials not found. File uploads will fail.');
+}
+
+const supabase = supabaseUrl && supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;
+
+// Configure multer for memory storage (we'll upload directly to Supabase)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880'), // 5MB default
+    fileSize: 2 * 1024 * 1024, // 2MB limit
   },
-  fileFilter: (req, file, cb) => {
-    // Accept images only
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'));
-    }
-  },
+  // Allow any MIME type (no fileFilter restriction)
 });
 
 // Apply authentication
@@ -48,18 +41,38 @@ router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    // In production, upload to cloud storage and get URL
-    // For now, return a placeholder URL
-    const fileUrl = `/uploads/${req.file.filename}`;
-    
-    // In a real implementation, you would:
-    // 1. Upload to Vercel Blob Storage, AWS S3, or similar
-    // 2. Get the public URL
-    // 3. Store the URL in the database if needed
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase storage not configured' });
+    }
+
+    // Generate unique filename
+    const fileExt = path.extname(req.file.originalname);
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${fileExt}`;
+    const filePath = `${req.user!.email}/${fileName}`;
+
+    // Upload to Supabase storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(supabaseBucket)
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false, // Don't overwrite existing files
+      });
+
+    if (uploadError) {
+      console.error('Supabase upload error:', uploadError);
+      return res.status(500).json({ error: uploadError.message || 'File upload failed' });
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(supabaseBucket)
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData.publicUrl;
 
     res.json({
-      url: fileUrl,
-      filename: req.file.filename,
+      url: publicUrl,
+      filename: fileName,
       size: req.file.size,
       mimetype: req.file.mimetype,
     });
@@ -78,13 +91,30 @@ router.post('/signed-url', async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'File URI is required' });
     }
 
-    // In production, generate a signed URL from your storage provider
-    // For now, return the URI as-is (insecure, but works for development)
-    // In production with Vercel Blob:
-    // const signedUrl = await blob.generateSignedUrl(uri, { expiresIn: 3600 });
-    
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase storage not configured' });
+    }
+
+    // Extract file path from URL
+    const urlObj = new URL(uri);
+    const filePath = urlObj.pathname.split(`/${supabaseBucket}/`)[1];
+
+    if (!filePath) {
+      return res.status(400).json({ error: 'Invalid file URI' });
+    }
+
+    // Generate signed URL (valid for 1 hour)
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from(supabaseBucket)
+      .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+    if (signedUrlError) {
+      console.error('Signed URL error:', signedUrlError);
+      return res.status(500).json({ error: signedUrlError.message || 'Failed to generate signed URL' });
+    }
+
     res.json({
-      signed_url: uri, // Replace with actual signed URL in production
+      signed_url: signedUrlData.signedUrl,
     });
   } catch (error: any) {
     console.error('Signed URL error:', error);

@@ -10,6 +10,7 @@ import CategoryDistributionChart from '../components/CategoryDistributionChart';
 import RecurringProcessor from '../components/RecurringProcessor';
 import BudgetWidget from '../components/BudgetWidget';
 import FinancialHealthOverview from '../components/FinancialHealthOverview';
+import FamilySpendingWidget from '../components/FamilySpendingWidget';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import Card from '@/shared/components/Card/Card';
@@ -24,7 +25,7 @@ import {
 
 function Dashboard() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, selectedFamilyMember } = useAuth();
 
   const { data: wallets, isLoading: walletsLoading, error: walletsError } = useQuery({
     queryKey: ['wallets', user?.email],
@@ -37,14 +38,25 @@ function Dashboard() {
   });
 
   const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
-    queryKey: ['transactions', 'summary', user?.email],
+    queryKey: ['transactions', 'summary', user?.email, selectedFamilyMember],
     queryFn: async () => {
       if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allTransactions = await Promise.all(
         walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
       );
-      return allTransactions.flat();
+      let filtered = allTransactions.flat();
+      
+      // Filter by selected family member if not viewing as owner
+      if (selectedFamilyMember && selectedFamilyMember !== 'owner') {
+        filtered = filtered.filter((t) => t.family_member_id === selectedFamilyMember.id);
+      } else if (selectedFamilyMember === 'owner') {
+        // Show only owner transactions (no family_member_id)
+        filtered = filtered.filter((t) => !t.family_member_id);
+      }
+      // If selectedFamilyMember is null, show all (default behavior)
+      
+      return filtered;
     },
     enabled: !!user?.email && !!wallets && wallets.length > 0,
     retry: 1,
@@ -215,6 +227,9 @@ function Dashboard() {
         <BudgetWidget />
         <QuickActions />
       </div>
+
+      {/* Family Spending Widget */}
+      <FamilySpendingWidget />
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
