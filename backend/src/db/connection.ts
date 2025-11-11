@@ -3,7 +3,7 @@ import { Pool } from 'pg';
 // Create connection pool
 let pool: Pool | null = null;
 
-function getPool(): Pool {
+export function getPool(): Pool {
   if (!pool) {
     let connectionString = process.env.POSTGRES_URL;
     
@@ -48,23 +48,16 @@ function getPool(): Pool {
       connectionString,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 15000, // Increased timeout for Supabase
+      connectionTimeoutMillis: 10000, // 10 second timeout
     };
 
-    // Always enable SSL for Supabase with rejectUnauthorized: false
-    // This is required because Supabase uses SSL but certificates may not be in default chain
-    if (isSupabase) {
-      poolConfig.ssl = {
-        rejectUnauthorized: false,
-      };
-      console.log('SSL configured for Supabase connection (rejectUnauthorized: false)');
-    } else if (connectionString.includes('sslmode=require')) {
-      // For other SSL connections, also use rejectUnauthorized: false
-      poolConfig.ssl = {
-        rejectUnauthorized: false,
-      };
-      console.log('SSL configured for connection (rejectUnauthorized: false)');
-    }
+    // Always enable SSL with rejectUnauthorized: false for all connections
+    // This fixes "self-signed certificate in certificate chain" errors
+    // Most cloud databases (Supabase, Neon, etc.) use SSL but certificates may not be in default chain
+    poolConfig.ssl = {
+      rejectUnauthorized: false,
+    };
+    console.log('SSL configured for database connection (rejectUnauthorized: false)');
 
     pool = new Pool(poolConfig);
 

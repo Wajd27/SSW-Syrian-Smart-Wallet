@@ -46,13 +46,22 @@ class ApiClient {
     const url = `${API_BASE_URL}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, '$1');
     
     console.log('Making request to:', url, 'Method:', options.method || 'GET'); // Debug log
+    
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
     const config: RequestInit = {
       ...options,
       headers,
+      signal: controller.signal,
     };
 
     try {
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
+      
+      console.log('Response received:', response.status, response.statusText, 'URL:', url); // Debug log
       
       // Check if response is OK before parsing JSON
       if (!response.ok) {
@@ -65,6 +74,7 @@ class ApiClient {
           const text = await response.text();
           errorMessage = text || errorMessage;
         }
+        console.error('API error response:', errorMessage, 'URL:', url);
         throw new Error(errorMessage);
       }
 
@@ -72,6 +82,7 @@ class ApiClient {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
+        console.log('API success response:', data?.length || 'object', 'URL:', url); // Debug log
         return data as T;
       } else {
         // If not JSON, try to parse as text or return empty array/object based on context
@@ -87,7 +98,13 @@ class ApiClient {
         return [] as unknown as T;
       }
     } catch (error) {
+      clearTimeout(timeoutId);
+      
       if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          console.error('API request timeout:', url);
+          throw new Error('Request timeout - please try again');
+        }
         console.error('API request error:', error.message, 'URL:', url);
         throw error;
       }

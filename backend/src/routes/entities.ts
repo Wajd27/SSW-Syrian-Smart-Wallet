@@ -9,11 +9,10 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Helper function to get pg Pool for dynamic queries
+// Use the shared pool from connection.ts instead of creating a new one
 async function getPool() {
-  const { Pool } = await import('pg');
-  return new Pool({
-    connectionString: process.env.POSTGRES_URL,
-  });
+  const { getPool: getSharedPool } = await import('../db/connection.js');
+  return getSharedPool();
 }
 
 // Wallet routes
@@ -143,8 +142,8 @@ router.get('/transaction', async (req: AuthRequest, res) => {
     ? `WHERE w.owner_email = $1 AND ${conditions.join(' AND ')}`
     : `WHERE w.owner_email = $1`;
 
-  const pool = await getPool();
   try {
+    const pool = await getPool();
     const result = await pool.query(
       `SELECT t.* FROM transactions t
        INNER JOIN wallets w ON t.wallet_id = w.id
@@ -152,8 +151,12 @@ router.get('/transaction', async (req: AuthRequest, res) => {
       values
     );
     res.json(result.rows);
-  } finally {
-    await pool.end();
+  } catch (error: any) {
+    console.error('Error fetching transactions:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch transactions', 
+      message: error.message || 'Database error' 
+    });
   }
 });
 
@@ -240,18 +243,17 @@ router.patch('/transaction/:id', async (req: AuthRequest, res) => {
     `;
 
     const pool = await getPool();
-    try {
-      const result = await pool.query(query, values);
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Transaction not found' });
-      }
-      res.json(result.rows[0]);
-    } finally {
-      await pool.end();
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Transaction not found' });
     }
+    res.json(result.rows[0]);
   } catch (error: any) {
-    console.error('Update transaction error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update transaction' });
+    console.error('Error updating transaction:', error);
+    res.status(500).json({ 
+      error: 'Failed to update transaction', 
+      message: error.message || 'Database error' 
+    });
   }
 });
 
@@ -440,18 +442,17 @@ router.patch('/budget/:id', async (req: AuthRequest, res) => {
     `;
 
     const pool = await getPool();
-    try {
-      const result = await pool.query(query, values);
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Budget not found' });
-      }
-      res.json(result.rows[0]);
-    } finally {
-      await pool.end();
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Budget not found' });
     }
+    res.json(result.rows[0]);
   } catch (error: any) {
-    console.error('Update budget error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update budget' });
+    console.error('Error updating budget:', error);
+    res.status(500).json({ 
+      error: 'Failed to update budget', 
+      message: error.message || 'Database error' 
+    });
   }
 });
 
@@ -556,18 +557,17 @@ router.patch('/savings-goal/:id', async (req: AuthRequest, res) => {
     `;
 
     const pool = await getPool();
-    try {
-      const result = await pool.query(query, values);
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Savings goal not found' });
-      }
-      res.json(result.rows[0]);
-    } finally {
-      await pool.end();
+    const result = await pool.query(query, values);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Savings goal not found' });
     }
+    res.json(result.rows[0]);
   } catch (error: any) {
-    console.error('Update savings goal error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update savings goal' });
+    console.error('Error updating savings goal:', error);
+    res.status(500).json({ 
+      error: 'Failed to update savings goal', 
+      message: error.message || 'Database error' 
+    });
   }
 });
 

@@ -25,23 +25,28 @@ function Dashboard() {
   const { t } = useTranslation();
   const { user, selectedFamilyMember } = useAuth();
 
-  const { data: wallets, isLoading: walletsLoading, error: walletsError } = useQuery({
+  const { data: wallets, isLoading: walletsLoading, error: walletsError, isError: walletsIsError } = useQuery({
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       try {
-        return await entities.wallet.filter({ owner_email: user.email, is_active: true });
+        const result = await entities.wallet.filter({ owner_email: user.email, is_active: true });
+        console.log('Wallets fetched:', result?.length || 0);
+        return result;
       } catch (error) {
         console.error('Error fetching wallets:', error);
+        // Return empty array on error to prevent infinite loading
         return [];
       }
     },
     enabled: !!user?.email,
     retry: 1,
     refetchOnMount: true,
+    // Ensure query completes even on error
+    throwOnError: false,
   });
 
-  const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
+  const { data: transactions, isLoading: transactionsLoading, error: transactionsError, isError: transactionsIsError } = useQuery({
     queryKey: ['transactions', 'summary', user?.email, selectedFamilyMember],
     queryFn: async () => {
       if (!user?.email || !wallets || wallets.length === 0) return [];
@@ -61,31 +66,40 @@ function Dashboard() {
         }
         // If selectedFamilyMember is null, show all (default behavior)
         
+        console.log('Transactions fetched:', filtered?.length || 0);
         return filtered;
       } catch (error) {
         console.error('Error fetching transactions:', error);
+        // Return empty array on error to prevent infinite loading
         return [];
       }
     },
     enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
     retry: 1,
     refetchOnMount: true,
+    // Ensure query completes even on error
+    throwOnError: false,
   });
 
-  const { data: familyMembers, isLoading: familyLoading, error: familyError } = useQuery({
+  const { data: familyMembers, isLoading: familyLoading, error: familyError, isError: familyIsError } = useQuery({
     queryKey: ['family-members', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       try {
-        return await entities.familyMember.filter({ added_by: user.email, is_active: true });
+        const result = await entities.familyMember.filter({ added_by: user.email, is_active: true });
+        console.log('Family members fetched:', result?.length || 0);
+        return result;
       } catch (error) {
         console.error('Error fetching family members:', error);
+        // Return empty array on error to prevent infinite loading
         return [];
       }
     },
     enabled: !!user?.email,
     retry: 1,
     refetchOnMount: true,
+    // Ensure query completes even on error
+    throwOnError: false,
   });
 
   // Log errors but don't block rendering - use empty arrays as fallback
@@ -99,7 +113,13 @@ function Dashboard() {
     console.error('Family members error:', familyError);
   }
 
-  if (walletsLoading || (transactionsLoading && wallets && wallets.length > 0) || familyLoading) {
+  // Show loading only if queries are actually loading and we don't have data yet
+  // If we have errors but queries completed, show the data (even if empty)
+  const isLoading = (walletsLoading && !wallets && !walletsIsError) || 
+                    (familyLoading && !familyMembers && !familyIsError) ||
+                    (transactionsLoading && wallets && wallets.length > 0 && !transactions && !transactionsIsError);
+
+  if (isLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
 
