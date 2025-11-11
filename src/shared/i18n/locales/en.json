@@ -27,7 +27,19 @@
     "activate": "Activate",
     "deactivate": "Deactivate",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
-    "deleteConfirmation": "Delete Confirmation"
+    "deleteConfirmation": "Delete Confirmation",
+    "gotIt": "Got it",
+    "later": "Later"
+  },
+  "install": {
+    "installApp": "Install App",
+    "install": "Install",
+    "installDescription": "Install this app on your device for a better experience and offline access.",
+    "iosInstructions": "To install this app on your iOS device, please use Safari:",
+    "iosStep1": "Open this page in Safari browser",
+    "iosStep2": "Tap the Share button at the bottom",
+    "iosStep3": "Scroll down and tap \"Add to Home Screen\"",
+    "iosStep4": "Tap \"Add\" to confirm"
   },
   "auth": {
     "login": "Login",

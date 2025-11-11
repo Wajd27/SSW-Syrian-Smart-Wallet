@@ -7,6 +7,7 @@ import { AuthProvider } from '@/features/auth/context/AuthContext';
 import AppRoutes from './routes/AppRoutes';
 import ErrorBoundary from '@/shared/components/ErrorBoundary/ErrorBoundary';
 import NotificationMonitor from '@/features/notifications/components/NotificationMonitor';
+import InstallPrompt from '@/shared/components/InstallPrompt/InstallPrompt';
 import { initializeAudioOnInteraction } from '@/shared/utils/sounds';
 
 const queryClient = new QueryClient({
@@ -31,6 +32,7 @@ function App() {
           <BrowserRouter>
             <AuthProvider>
               <NotificationMonitor />
+              <InstallPrompt />
               <AppRoutes />
             </AuthProvider>
           </BrowserRouter>

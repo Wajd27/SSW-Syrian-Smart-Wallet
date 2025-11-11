@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import NotificationBell from '../NotificationBell/NotificationBell';
+import InstallButton from '../InstallButton/InstallButton';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -47,6 +48,7 @@ function Header({ onMenuClick }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            <InstallButton />
             <NotificationBell />
             <LanguageSwitcher />
             {user && (
