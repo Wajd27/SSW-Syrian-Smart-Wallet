@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { entities } from '@/shared/api/entities';
@@ -10,6 +10,7 @@ import Input from '@/shared/components/Forms/Input';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useToast } from '@/shared/hooks/useToast';
+import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import { AIRecommendation } from '@/shared/types/entities';
 
@@ -21,6 +22,28 @@ function AIAssistant() {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
+  const [conversation, setConversation] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+  const suggestedQuestions = [
+    'How can I reduce my monthly expenses?',
+    'Which categories are causing overspending?',
+    'What is my savings rate and how to improve it?',
+    'Which debts should I pay first?',
+    'How close am I to my savings goals?',
+  ];
+
+  useEffect(() => {
+    if (user?.email) {
+      const saved = localStorage.getItem(`ai-convo:${user.email}`);
+      if (saved) setConversation(JSON.parse(saved));
+    }
+  }, [user?.email]);
+
+  const persistConversation = (next: { role: 'user' | 'assistant'; content: string }[]) => {
+    setConversation(next);
+    if (user?.email) {
+      localStorage.setItem(`ai-convo:${user.email}`, JSON.stringify(next));
+    }
+  };
 
   const { data: recommendations, isLoading } = useQuery({
     queryKey: ['ai-recommendations', user?.email],
@@ -109,6 +132,7 @@ function AIAssistant() {
         transactions: transactions.flat(),
       });
       setAnswer(response);
+      persistConversation([...conversation, { role: 'user', content: question }, { role: 'assistant', content: response }]);
       showSuccess(t('common.success'));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
@@ -134,11 +158,21 @@ function AIAssistant() {
   return (
     <PullToRefresh queryKeys={['ai-recommendations', 'ai-recommendations-entities', 'wallets', 'transactions', 'savings-goals', 'debts', 'investments', 'budgets']}>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('aiAssistant.title')}</h1>
+        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          <h1 className="text-2xl font-bold text-gray-900">{t('aiAssistant.title')}</h1>
+          <InfoTooltip content={t('aiAssistant.info')} />
+        </div>
 
       {/* Question Input */}
       <Card>
         <div className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {suggestedQuestions.map((q, idx) => (
+              <Button key={idx} variant="secondary" size="sm" onClick={() => setQuestion(q)}>
+                {q}
+              </Button>
+            ))}
+          </div>
           <Input
             label={t('aiAssistant.askQuestion')}
             value={question}
@@ -153,6 +187,24 @@ function AIAssistant() {
           {answer && (
             <div className="mt-4 p-4 bg-primary-50 rounded-lg">
               <p className="text-gray-700">{answer}</p>
+            </div>
+          )}
+          {conversation.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-md font-semibold text-gray-900 mb-2">Conversation</h3>
+              <div className="space-y-2 max-h-64 overflow-auto">
+                {conversation.map((m, i) => (
+                  <div key={i} className={`p-3 rounded-lg ${m.role === 'user' ? 'bg-blue-50 text-blue-900' : 'bg-gray-50 text-gray-800'}`}>
+                    <span className="text-xs uppercase font-semibold mr-2 rtl:ml-2 rtl:mr-0">{m.role}</span>
+                    <span>{m.content}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end mt-2">
+                <Button variant="outline" size="sm" onClick={() => persistConversation([])}>
+                  {t('common.clear') || 'Clear'}
+                </Button>
+              </div>
             </div>
           )}
         </div>
@@ -204,6 +256,13 @@ function AIAssistant() {
                       {existing.is_implemented
                         ? t('aiAssistant.implemented')
                         : t('aiAssistant.notImplemented')}
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setQuestion(`How to implement: ${rec.title}?`)}
+                    >
+                      Ask follow-up
                     </Button>
                   </div>
                 ) : (

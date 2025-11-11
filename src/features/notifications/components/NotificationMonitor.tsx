@@ -46,6 +46,21 @@ function NotificationMonitor() {
     refetchInterval: 5 * 60 * 1000,
   });
 
+  const { data: transactions } = useQuery({
+    queryKey: ['transactions', 'monitor', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      const wallets = await entities.wallet.filter({ owner_email: user.email, is_active: true });
+      const walletIds = wallets.map((w) => w.id);
+      const allTransactions = await Promise.all(
+        walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
+      );
+      return allTransactions.flat();
+    },
+    enabled: !!user?.email,
+    refetchInterval: 5 * 60 * 1000,
+  });
+
   const { data: savingsGoals } = useQuery({
     queryKey: ['savings-goals', 'monitor', user?.email],
     queryFn: async () => {
@@ -129,9 +144,50 @@ function NotificationMonitor() {
       }
 
       // Check budgets
-      if (notificationSettings.budget_alerts !== false) {
-        // Budget checking would require transaction data - simplified here
-        // const threshold = notificationSettings.budget_threshold || 80;
+      if (notificationSettings.budget_alerts !== false && budgets && transactions) {
+        const threshold = notificationSettings.budget_threshold || 80;
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        const currentMonthBudgets = budgets.filter((b) => b.month === currentMonth);
+
+        currentMonthBudgets.forEach(async (budget) => {
+          const budgetTransactions = transactions.filter(
+            (t) =>
+              t.wallet_id === budget.wallet_id &&
+              t.transaction_date?.startsWith(budget.month) &&
+              t.type === 'expense' &&
+              t.category === budget.category
+          );
+          const spent = budgetTransactions.reduce(
+            (sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp),
+            0
+          );
+          const percentage = (spent / budget.amount) * 100;
+
+          // Check for 50%, threshold (default 80%), and 100%
+          const thresholds = [50, threshold, 100];
+          for (const checkThreshold of thresholds) {
+            if (
+              percentage >= checkThreshold &&
+              percentage < checkThreshold + 5 &&
+              !existingNotifications?.find(
+                (n) =>
+                  n.type === 'budget_alert' &&
+                  n.action_url?.includes(`budget=${budget.id}`) &&
+                  n.message?.includes(`${checkThreshold}%`)
+              )
+            ) {
+              await createNotificationMutation.mutateAsync({
+                title: 'Budget Alert',
+                message: `Budget for ${budget.category} has reached ${checkThreshold}% (${percentage.toFixed(1)}%)`,
+                type: 'budget_alert',
+                is_read: false,
+                action_url: `/budgets?id=${budget.id}`,
+                wallet_owner: user.email,
+              });
+              break; // Only create one notification per budget check
+            }
+          }
+        });
       }
 
       // Check savings goals milestones
@@ -165,6 +221,7 @@ function NotificationMonitor() {
   }, [
     recurringTransactions,
     budgets,
+    transactions,
     savingsGoals,
     investments,
     userData,

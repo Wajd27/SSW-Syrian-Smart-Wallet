@@ -12,6 +12,7 @@ import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useFeedback } from '@/shared/hooks/useFeedback';
 import { useToast } from '@/shared/hooks/useToast';
+import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Budget } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -23,12 +24,20 @@ function Budgets() {
   const { triggerFeedback } = useFeedback();
   const { showSuccess, showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [formData, setFormData] = useState({
     wallet_id: '',
     category: '',
     amount: 0,
     month: new Date().toISOString().slice(0, 7),
+  });
+
+  const [templateForm, setTemplateForm] = useState({
+    wallet_id: '',
+    month: new Date().toISOString().slice(0, 7),
+    total_budget: 0,
+    template: '50-30-20',
   });
 
   const { data: wallets } = useQuery({
@@ -184,6 +193,97 @@ function Budgets() {
     'Other',
   ];
 
+  const budgetTemplates: Record<string, { label: string; allocations: { category: string; percent: number }[] }> = {
+    '50-30-20': {
+      label: '50/30/20',
+      allocations: [
+        { category: 'Utilities', percent: 20 },
+        { category: 'Food', percent: 20 },
+        { category: 'Transport', percent: 10 },
+        { category: 'Healthcare', percent: 5 },
+        { category: 'Education', percent: 5 },
+        { category: 'Shopping', percent: 10 },
+        { category: 'Entertainment', percent: 10 },
+        { category: 'Other', percent: 20 },
+      ],
+    },
+    essentials_saver: {
+      label: 'Essentials Saver',
+      allocations: [
+        { category: 'Utilities', percent: 25 },
+        { category: 'Food', percent: 25 },
+        { category: 'Transport', percent: 15 },
+        { category: 'Healthcare', percent: 10 },
+        { category: 'Education', percent: 5 },
+        { category: 'Shopping', percent: 5 },
+        { category: 'Entertainment', percent: 5 },
+        { category: 'Other', percent: 10 },
+      ],
+    },
+  };
+
+  const applyTemplate = async () => {
+    try {
+      if (!templateForm.wallet_id || !templateForm.month || templateForm.total_budget <= 0) {
+        showError(t('common.error'));
+        return;
+      }
+      const tmpl = budgetTemplates[templateForm.template];
+      const creations = tmpl.allocations.map((alloc) =>
+        entities.budget.create({
+          wallet_id: templateForm.wallet_id,
+          category: alloc.category,
+          amount: Math.round((templateForm.total_budget * alloc.percent) / 100),
+          month: templateForm.month,
+        })
+      );
+      await Promise.all(creations);
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      setIsTemplateModalOpen(false);
+      showSuccess(t('common.success'));
+    } catch (e: any) {
+      showError(e?.message || t('common.error'));
+    }
+  };
+
+  const copyLastMonth = async () => {
+    try {
+      if (!wallets || wallets.length === 0) return;
+      const targetMonth = new Date().toISOString().slice(0, 7);
+      const lastMonthDate = new Date();
+      lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+      const lastMonth = lastMonthDate.toISOString().slice(0, 7);
+
+      // Copy for each wallet individually
+      const ops: Promise<any>[] = [];
+      for (const w of wallets) {
+        const prev = (await entities.budget.filter({ wallet_id: w.id })) as Budget[];
+        const prevMonthBudgets = prev.filter((b) => b.month === lastMonth);
+        // Avoid duplicates
+        const existing = prev.filter((b) => b.month === targetMonth);
+        const existingKey = new Set(existing.map((b) => `${b.category}`));
+        prevMonthBudgets.forEach((b) => {
+          const key = `${b.category}`;
+          if (!existingKey.has(key)) {
+            ops.push(
+              entities.budget.create({
+                wallet_id: w.id,
+                category: b.category,
+                amount: b.amount,
+                month: targetMonth,
+              })
+            );
+          }
+        });
+      }
+      await Promise.all(ops);
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      showSuccess(t('common.success'));
+    } catch (e: any) {
+      showError(e?.message || t('common.error'));
+    }
+  };
+
   if (isLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
@@ -192,11 +292,22 @@ function Budgets() {
     <PullToRefresh queryKeys={['budgets', 'transactions', 'wallets']}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('budgets.title')}</h1>
-        <Button onClick={() => handleOpenModal()}>
-          <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
-          {t('budgets.addBudget')}
-        </Button>
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('budgets.title')}</h1>
+            <InfoTooltip content={t('budgets.info')} />
+          </div>
+        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          <Button variant="secondary" onClick={() => setIsTemplateModalOpen(true)}>
+            {t('budgets.useTemplate') || 'Use Template'}
+          </Button>
+          <Button variant="secondary" onClick={copyLastMonth}>
+            {t('budgets.copyLastMonth') || 'Copy Last Month'}
+          </Button>
+          <Button onClick={() => handleOpenModal()}>
+            <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
+            {t('budgets.addBudget')}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -358,6 +469,54 @@ function Budgets() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Template Modal */}
+      <Modal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        title={t('budgets.useTemplate') || 'Use Template'}
+      >
+        <div className="space-y-4">
+          <Select
+            label={t('wallets.title')}
+            value={templateForm.wallet_id}
+            onChange={(e) => setTemplateForm({ ...templateForm, wallet_id: e.target.value })}
+            options={[
+              { value: '', label: t('common.select') },
+              ...(wallets?.map((w) => ({ value: w.id, label: w.name })) || []),
+            ]}
+            required
+          />
+          <Input
+            label={t('budgets.month')}
+            type="month"
+            value={templateForm.month}
+            onChange={(e) => setTemplateForm({ ...templateForm, month: e.target.value })}
+            required
+          />
+          <Select
+            label={t('common.template') || 'Template'}
+            value={templateForm.template}
+            onChange={(e) => setTemplateForm({ ...templateForm, template: e.target.value })}
+            options={Object.entries(budgetTemplates).map(([key, v]) => ({ value: key, label: v.label }))}
+          />
+          <Input
+            label={t('budgets.totalBudget') || 'Total Monthly Budget (base)'}
+            type="number"
+            step="0.01"
+            value={templateForm.total_budget}
+            onChange={(e) => setTemplateForm({ ...templateForm, total_budget: parseFloat(e.target.value) || 0 })}
+          />
+          <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse pt-4">
+            <Button variant="secondary" onClick={() => setIsTemplateModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={applyTemplate}>
+              {t('common.apply') || 'Apply'}
+            </Button>
+          </div>
+        </div>
       </Modal>
       </div>
     </PullToRefresh>

@@ -13,6 +13,7 @@ import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useFeedback } from '@/shared/hooks/useFeedback';
 import { useToast } from '@/shared/hooks/useToast';
+import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SavingsGoal } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -171,7 +172,10 @@ function SavingsGoals() {
     <PullToRefresh queryKeys={['savings-goals', 'wallets']}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('savingsGoals.title')}</h1>
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('savingsGoals.title')}</h1>
+            <InfoTooltip content={t('savingsGoals.info')} />
+          </div>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('savingsGoals.addGoal')}

@@ -33,7 +33,8 @@
     "update": "Update",
     "updateAvailable": "Update Available",
     "updateAvailableMessage": "A new version of the app is available. Would you like to update now?",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "viewAll": "View All"
   },
   "install": {
     "installApp": "Install App",
@@ -74,7 +75,23 @@
     "addTransaction": "Add Transaction",
     "addFamilyMember": "Add Family Member",
     "spendingTrends": "Spending Trends",
-    "categoryDistribution": "Category Distribution"
+    "categoryDistribution": "Category Distribution",
+    "financialHealth": "Financial Health",
+    "financialHealthInfo": "Your financial health score is calculated based on net worth, savings rate, debt-to-income ratio, budget adherence, and goal progress. Excellent (80+), Good (60-79), Fair (40-59), Poor (<40).",
+    "netWorth": "Net Worth",
+    "netWorthInfo": "Net Worth = (Wallet Balances + Investment Values) - Total Debts",
+    "savingsRate": "Savings Rate",
+    "savingsRateInfo": "Savings Rate = (Income - Expenses) / Income * 100. Higher is better.",
+    "debtToIncome": "Debt-to-Income",
+    "debtToIncomeInfo": "Debt-to-Income Ratio = Monthly Debt Payments / Monthly Income * 100. Lower is better (aim for <30%).",
+    "monthlyCashFlow": "Monthly Cash Flow",
+    "net": "Net",
+    "healthStatus": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor"
+    }
   },
   "wallets": {
     "title": "Wallets",
@@ -85,7 +102,8 @@
     "currency": "Currency",
     "initialBalance": "Initial Balance",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "info": "Wallets are where you track your money. Each wallet has its own currency and balance. Transactions, budgets, and savings goals are linked to wallets. Create multiple wallets for different purposes (personal, business, savings)."
   },
   "transactions": {
     "title": "Transactions",
@@ -104,7 +122,8 @@
     "receipt": "Receipt",
     "uploadReceipt": "Upload Receipt",
     "income": "Income",
-    "expense": "Expense"
+    "expense": "Expense",
+    "info": "Transactions are income (money in) or expenses (money out). They affect wallet balances and are tracked against budgets. Budget status badges show if you're on track (green), at risk (yellow), or exceeded (red)."
   },
   "recurring": {
     "title": "Recurring Transactions",
@@ -115,7 +134,8 @@
     "daily": "Daily",
     "weekly": "Weekly",
     "monthly": "Monthly",
-    "yearly": "Yearly"
+    "yearly": "Yearly",
+    "info": "Recurring transactions are automatically processed on schedule (salary, rent, subscriptions). They affect wallet balances and cash flow projections. The app processes them every 5 minutes when due."
   },
   "budgets": {
     "title": "Budgets",
@@ -125,7 +145,17 @@
     "budgetAmount": "Budget Amount",
     "spent": "Spent",
     "remaining": "Remaining",
-    "progress": "Progress"
+    "progress": "Progress",
+    "widgetInfo": "This month's budget status. Green = under budget, Yellow = 80-100% spent, Red = exceeded.",
+    "noBudgetsThisMonth": "No budgets set for this month.",
+    "createBudget": "Create Budget",
+    "exceededAlert": "{{count}} budget(s) exceeded",
+    "atRiskAlert": "{{count}} budget(s) at risk",
+    "viewMore": "View {{count}} more",
+    "exceeded": "Budget Exceeded",
+    "atRisk": "Budget at Risk",
+    "onTrack": "On Track",
+    "info": "Budgets help control spending by setting monthly limits per category. Transactions automatically track against budgets. The dashboard shows budget status, and transactions display budget badges. Stay within budgets to improve your financial health score."
   },
   "savingsGoals": {
     "title": "Savings Goals",
@@ -136,7 +166,8 @@
     "currentAmount": "Current Amount",
     "targetDate": "Target Date",
     "description": "Description",
-    "progress": "Progress"
+    "progress": "Progress",
+    "info": "Savings goals help you save for specific purposes. Link investments to goals to track progress. Goals contribute to your financial health score. Transactions can be allocated to goals to track contributions."
   },
   "investments": {
     "title": "Investments",
@@ -151,7 +182,8 @@
     "expectedReturn": "Expected Return",
     "low": "Low",
     "medium": "Medium",
-    "high": "High"
+    "high": "High",
+    "info": "Investments are assets that grow your net worth. Link investments to savings goals to track goal progress. Investment values are included in net worth calculations. Update current values regularly to track performance."
   },
   "debts": {
     "title": "Debts",
@@ -164,7 +196,8 @@
     "minimumPayment": "Minimum Payment",
     "interestRate": "Interest Rate",
     "dueDate": "Due Date",
-    "creditor": "Creditor"
+    "creditor": "Creditor",
+    "info": "Debts are liabilities that reduce your net worth. Track payments and see how debts affect your financial health. Lower debt-to-income ratio improves your financial health score. Pay down debts to increase net worth."
   },
   "family": {
     "title": "Family Members",
@@ -172,21 +205,24 @@
     "editMember": "Edit Family Member",
     "memberName": "Name",
     "relationship": "Relationship",
-    "dateOfBirth": "Date of Birth"
+    "dateOfBirth": "Date of Birth",
+    "info": "Track expenses by family member to understand spending patterns. Assign transactions to family members to see who spends what. Useful for family budget management."
   },
   "aiAssistant": {
     "title": "AI Assistant",
     "askQuestion": "Ask a question",
     "recommendations": "Recommendations",
     "implemented": "Implemented",
-    "notImplemented": "Not Implemented"
+    "notImplemented": "Not Implemented",
+    "info": "The AI Assistant analyzes all your financial data (wallets, transactions, budgets, goals, investments, debts) to provide personalized recommendations. Ask questions about your finances and get actionable advice to improve your financial health."
   },
   "reports": {
     "title": "Reports",
     "financialSummary": "Financial Summary",
     "spendingAnalysis": "Spending Analysis",
     "incomeVsExpense": "Income vs Expense",
-    "investmentPerformance": "Investment Performance"
+    "investmentPerformance": "Investment Performance",
+    "info": "Reports combine data from all features: transactions, budgets, investments, and debts. See your complete financial picture with charts and analysis. Use reports to identify trends and make informed decisions."
   },
   "settings": {
     "title": "Settings",
@@ -211,6 +247,19 @@
     "markAsRead": "Mark as read",
     "markAllAsRead": "Mark all as read",
     "unreadCount": "{{count}} unread"
+  },
+  "userGuide": {
+    "title": "User Guide",
+    "searchPlaceholder": "Search guide...",
+    "tableOfContents": "Table of Contents",
+    "steps": "Steps",
+    "selectTopic": "Select a topic from the table of contents to get started",
+    "help": "Help",
+    "guide": "Guide"
+  },
+  "footer": {
+    "developedBy": "Developed by",
+    "copyright": "© {{year}} All rights reserved."
   }
 }
 

@@ -8,11 +8,13 @@ import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import { useToast } from '@/shared/hooks/useToast';
+import UserGuide from '@/shared/components/UserGuide/UserGuide';
 
 function Settings() {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     default_currency: user?.default_currency || 'SYP',
@@ -58,7 +60,15 @@ function Settings() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
+        </div>
+        <Button variant="outline" onClick={() => setIsGuideOpen(true)}>
+          {t('userGuide.guide')}
+        </Button>
+      </div>
+      <UserGuide isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
 
       <form onSubmit={handleSubmit}>
         <Card title={t('settings.profile')} className="mb-6">
@@ -263,15 +273,6 @@ function Settings() {
           </Button>
         </div>
       </form>
-
-      {/* Developer Info */}
-      <Card className="mt-8">
-        <div className="text-left rtl:text-right py-4">
-          <p className="text-sm text-gray-600">
-            {t('settings.developedBy') || 'Developed by'} <span className="font-semibold text-gray-800">Wajd Hannoun</span>
-          </p>
-        </div>
-      </Card>
     </div>
   );
 }

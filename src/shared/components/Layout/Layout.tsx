@@ -26,7 +26,9 @@ function Layout({ children }: LayoutProps) {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="text-left rtl:text-right">
             <p className="text-sm text-gray-600">
-              {t('settings.developedBy') || 'Developed by'} <span className="font-semibold text-gray-800">Wajd Hannoun</span>
+              {t('footer.developedBy') || 'Developed by'} <span className="font-semibold text-gray-800">Wajd Hannoun</span>
+              {' • '}
+              <span>{t('footer.copyright', { year: new Date().getFullYear() }) || `© ${new Date().getFullYear()} All rights reserved.`}</span>
             </p>
           </div>
         </div>

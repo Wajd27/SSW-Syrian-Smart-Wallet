@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import NotificationBell from '../NotificationBell/NotificationBell';
 import InstallButton from '../InstallButton/InstallButton';
+import UserGuide from '../UserGuide/UserGuide';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -11,6 +14,7 @@ interface HeaderProps {
 function Header({ onMenuClick }: HeaderProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   return (
     <header className="glass-card backdrop-blur-xl bg-white/20 border-b border-white/30 sticky top-0 z-40 shadow-lg">
@@ -48,6 +52,13 @@ function Header({ onMenuClick }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
+            <button
+              onClick={() => setIsGuideOpen(true)}
+              className="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300"
+              title={t('userGuide.help')}
+            >
+              <QuestionMarkCircleIcon className="h-6 w-6" />
+            </button>
             <InstallButton />
             <NotificationBell />
             <LanguageSwitcher />
@@ -61,6 +72,7 @@ function Header({ onMenuClick }: HeaderProps) {
           </div>
         </div>
       </div>
+      <UserGuide isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
     </header>
   );
 }

@@ -12,6 +12,7 @@ import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useToast } from '@/shared/hooks/useToast';
+import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Debt } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -149,7 +150,10 @@ function Debts() {
     <PullToRefresh queryKeys={['debts']}>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">{t('debts.title')}</h1>
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <h1 className="text-2xl font-bold text-gray-900">{t('debts.title')}</h1>
+            <InfoTooltip content={t('debts.info')} />
+          </div>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('debts.addDebt')}

@@ -8,11 +8,16 @@ import BarChart from '@/shared/components/Charts/BarChart';
 import PieChart from '@/shared/components/Charts/PieChart';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { formatCurrency } from '@/shared/lib/formatters';
+import { useState, useMemo } from 'react';
+import Button from '@/shared/components/Button/Button';
+import Input from '@/shared/components/Forms/Input';
 
 function Reports() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const [filters, setFilters] = useState({ start_date: '', end_date: '' });
 
   const { data: wallets } = useQuery({
     queryKey: ['wallets', user?.email],
@@ -24,14 +29,21 @@ function Reports() {
   });
 
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['transactions', 'reports', user?.email],
+    queryKey: ['transactions', 'reports', user?.email, filters],
     queryFn: async () => {
       if (!user?.email || !wallets) return [];
       const walletIds = wallets.map((w) => w.id);
       const allTransactions = await Promise.all(
         walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
       );
-      return allTransactions.flat();
+      let list = allTransactions.flat();
+      if (filters.start_date) {
+        list = list.filter((t) => t.transaction_date >= filters.start_date);
+      }
+      if (filters.end_date) {
+        list = list.filter((t) => t.transaction_date <= filters.end_date);
+      }
+      return list;
     },
     enabled: !!user?.email && !!wallets,
   });
@@ -50,13 +62,18 @@ function Reports() {
   }
 
   // Process data for charts
-  const last6Months = Array.from({ length: 6 }, (_, i) => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - (5 - i));
-    return date.toISOString().slice(0, 7);
-  });
+  const monthBuckets = useMemo(() => {
+    const set = new Set<string>();
+    (transactions || []).forEach((t) => set.add(t.transaction_date.slice(0, 7)));
+    const arr = Array.from(set).sort();
+    return arr.length > 0 ? arr : Array.from({ length: 6 }, (_, i) => {
+      const date = new Date();
+      date.setMonth(date.getMonth() - (5 - i));
+      return date.toISOString().slice(0, 7);
+    });
+  }, [transactions]);
 
-  const incomeVsExpenseData = last6Months.map((month) => {
+  const incomeVsExpenseData = monthBuckets.map((month) => {
     const monthTransactions = transactions?.filter((t) => t.transaction_date.startsWith(month)) || [];
     const income = monthTransactions
       .filter((t) => t.type === 'income')
@@ -111,7 +128,37 @@ function Reports() {
   return (
     <PullToRefresh queryKeys={['wallets', 'transactions', 'investments', 'reports']}>
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
+        <div className="flex items-center space-x-2 rtl:space-x-reverse">
+          <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
+          <InfoTooltip content={t('reports.info')} />
+        </div>
+
+      {/* Filters and Export */}
+      <Card>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Input
+            label={t('common.startDate')}
+            type="date"
+            value={filters.start_date}
+            onChange={(e) => setFilters({ ...filters, start_date: e.target.value })}
+          />
+          <Input
+            label={t('common.endDate')}
+            type="date"
+            value={filters.end_date}
+            onChange={(e) => setFilters({ ...filters, end_date: e.target.value })}
+          />
+          <div className="md:col-span-3 flex items-end justify-end space-x-2 rtl:space-x-reverse">
+            <Button variant="secondary" onClick={() => setFilters({ start_date: '', end_date: '' })}>
+              {t('common.clear') || 'Clear'}
+            </Button>
+            <Button variant="outline" onClick={() => exportCSV(transactions || [])}>
+              {t('common.exportCsv') || 'Export CSV'}
+            </Button>
+            <Button onClick={exportPDF}>{t('common.exportPdf') || 'Export PDF'}</Button>
+          </div>
+        </div>
+      </Card>
 
       {/* Financial Summary */}
       <Card title={t('reports.financialSummary')}>
@@ -166,3 +213,46 @@ function Reports() {
 }
 
 export default Reports;
+
+// Helpers
+function exportCSV(transactions: any[]) {
+  const headers = [
+    'Date',
+    'Type',
+    'Title',
+    'Category',
+    'Amount (SYP)',
+    'Amount (USD)',
+    'Wallet ID',
+  ];
+  const rows = transactions.map((t) => [
+    t.transaction_date,
+    t.type,
+    escapeCsv(t.title || ''),
+    escapeCsv(t.category || ''),
+    t.amount_syp,
+    t.amount_usd,
+    t.wallet_id,
+  ]);
+  const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `reports-${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function exportPDF() {
+  // Use browser print to PDF
+  window.print();
+}
+
+function escapeCsv(v: string) {
+  if (v?.includes(',') || v?.includes('"') || v?.includes('\n')) {
+    return `"${v.replace(/"/g, '""')}"`;
+  }
+  return v;
+}

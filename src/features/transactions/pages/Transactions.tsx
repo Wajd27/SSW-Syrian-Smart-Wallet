@@ -16,6 +16,7 @@ import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import FileUpload from '@/shared/components/Forms/FileUpload';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Transaction as TransactionType } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -72,6 +73,19 @@ function Transactions() {
       return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
+  });
+
+  const { data: budgets } = useQuery({
+    queryKey: ['budgets', 'transactions', user?.email],
+    queryFn: async () => {
+      if (!user?.email || !wallets) return [];
+      const walletIds = wallets.map((w) => w.id);
+      const allBudgets = await Promise.all(
+        walletIds.map((id) => entities.budget.filter({ wallet_id: id }))
+      );
+      return allBudgets.flat();
+    },
+    enabled: !!user?.email && !!wallets,
   });
 
   const { data: transactions, isLoading } = useQuery({
@@ -244,6 +258,45 @@ function Transactions() {
     'Other',
   ];
 
+  // Calculate budget status for expense transactions
+  const getBudgetStatus = (transaction: any) => {
+    if (transaction.type !== 'expense' || !transaction.category || !budgets) {
+      return null;
+    }
+
+    const transactionMonth = transaction.transaction_date?.slice(0, 7);
+    const budget = budgets.find(
+      (b) =>
+        b.wallet_id === transaction.wallet_id &&
+        b.month === transactionMonth &&
+        b.category === transaction.category
+    );
+
+    if (!budget) return null;
+
+    // Calculate total spent for this budget
+    const budgetTransactions =
+      transactions?.filter(
+        (t) =>
+          t.wallet_id === budget.wallet_id &&
+          t.transaction_date?.startsWith(budget.month) &&
+          t.type === 'expense' &&
+          t.category === budget.category
+      ) || [];
+    const spent = budgetTransactions.reduce(
+      (sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp),
+      0
+    );
+    const percentage = (spent / budget.amount) * 100;
+
+    return {
+      budget,
+      spent,
+      percentage,
+      status: percentage > 100 ? 'exceeded' : percentage >= 80 ? 'at-risk' : 'ok',
+    };
+  };
+
   if (isLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
@@ -260,7 +313,10 @@ function Transactions() {
     >
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('transactions.title')}</h1>
+          <div className="flex items-center space-x-2 rtl:space-x-reverse">
+            <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('transactions.title')}</h1>
+            <InfoTooltip content={t('transactions.info')} />
+          </div>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('transactions.addTransaction')}
@@ -316,6 +372,7 @@ function Transactions() {
             transaction.primary_currency === 'USD'
               ? transaction.amount_usd
               : transaction.amount_syp;
+          const budgetStatus = getBudgetStatus(transaction);
           return (
             <Card
               key={transaction.id}
@@ -324,7 +381,7 @@ function Transactions() {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse flex-wrap">
                     <h3 className="text-lg font-semibold text-gray-900">
                       {transaction.title}
                     </h3>
@@ -339,6 +396,30 @@ function Transactions() {
                         ? t('transactions.income')
                         : t('transactions.expense')}
                     </span>
+                    {budgetStatus && (
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full font-medium ${
+                          budgetStatus.status === 'exceeded'
+                            ? 'bg-red-500 text-white'
+                            : budgetStatus.status === 'at-risk'
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-green-500 text-white'
+                        }`}
+                        title={
+                          budgetStatus.status === 'exceeded'
+                            ? t('budgets.exceeded') || 'Budget Exceeded'
+                            : budgetStatus.status === 'at-risk'
+                            ? t('budgets.atRisk') || 'Budget at Risk'
+                            : t('budgets.onTrack') || 'On Track'
+                        }
+                      >
+                        {budgetStatus.status === 'exceeded'
+                          ? '⚠️ Exceeded'
+                          : budgetStatus.status === 'at-risk'
+                          ? '⚠️ At Risk'
+                          : '✓ On Track'}
+                      </span>
+                    )}
                   </div>
                   <p className="text-2xl font-bold mt-2">
                     {formatCurrency(
