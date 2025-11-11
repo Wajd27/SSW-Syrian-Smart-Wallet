@@ -12,6 +12,7 @@ import DatePicker from '@/shared/components/Forms/DatePicker';
 import LineChart from '@/shared/components/Charts/LineChart';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import { useToast } from '@/shared/hooks/useToast';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Investment } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -20,6 +21,7 @@ function Investments() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
   const [formData, setFormData] = useState({
@@ -64,6 +66,10 @@ function Investments() {
       queryClient.invalidateQueries({ queryKey: ['investments'] });
       setIsModalOpen(false);
       resetForm();
+      showSuccess(t('investments.addInvestment') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -75,6 +81,10 @@ function Investments() {
       setIsModalOpen(false);
       setEditingInvestment(null);
       resetForm();
+      showSuccess(t('investments.editInvestment') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -83,6 +93,10 @@ function Investments() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['investments'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showSuccess(t('common.delete') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 

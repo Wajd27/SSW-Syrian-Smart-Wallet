@@ -12,6 +12,7 @@ import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useFeedback } from '@/shared/hooks/useFeedback';
+import { useToast } from '@/shared/hooks/useToast';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SavingsGoal } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -21,6 +22,7 @@ function SavingsGoals() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { triggerFeedback } = useFeedback();
+  const { showSuccess, showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const [formData, setFormData] = useState({
@@ -69,9 +71,11 @@ function SavingsGoals() {
       setIsModalOpen(false);
       resetForm();
       triggerFeedback('success');
+      showSuccess(t('savingsGoals.addGoal') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -84,9 +88,11 @@ function SavingsGoals() {
       setEditingGoal(null);
       resetForm();
       triggerFeedback('success');
+      showSuccess(t('savingsGoals.editGoal') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -96,9 +102,11 @@ function SavingsGoals() {
       queryClient.invalidateQueries({ queryKey: ['savings-goals'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       triggerFeedback('success');
+      showSuccess(t('common.delete') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 

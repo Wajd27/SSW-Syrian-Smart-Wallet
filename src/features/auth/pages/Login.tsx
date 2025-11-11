@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '@/shared/hooks/useToast';
 
 function Login() {
   const { t } = useTranslation();
   const { login } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,8 +20,11 @@ function Login() {
 
     try {
       await login(email, password);
+      showSuccess(t('auth.loginSuccess'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }

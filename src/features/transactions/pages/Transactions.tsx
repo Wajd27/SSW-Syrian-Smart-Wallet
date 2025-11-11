@@ -8,6 +8,7 @@ import { filesApi } from '@/shared/api/files';
 import Card from '@/shared/components/Card/Card';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useFeedback } from '@/shared/hooks/useFeedback';
+import { useToast } from '@/shared/hooks/useToast';
 import Button from '@/shared/components/Button/Button';
 import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
@@ -24,6 +25,7 @@ function Transactions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { triggerFeedback } = useFeedback();
+  const { showSuccess, showError } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(searchParams.get('action') === 'add');
   const [editingTransaction, setEditingTransaction] = useState<TransactionType | null>(null);
@@ -112,9 +114,11 @@ function Transactions() {
       setIsModalOpen(false);
       resetForm();
       triggerFeedback('success');
+      showSuccess(t('transactions.addTransaction') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -133,9 +137,11 @@ function Transactions() {
       setEditingTransaction(null);
       resetForm();
       triggerFeedback('success');
+      showSuccess(t('transactions.editTransaction') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -145,9 +151,11 @@ function Transactions() {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       triggerFeedback('success');
+      showSuccess(t('common.delete') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 

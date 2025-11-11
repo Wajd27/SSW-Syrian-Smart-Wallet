@@ -9,6 +9,7 @@ import Button from '@/shared/components/Button/Button';
 import Input from '@/shared/components/Forms/Input';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import { useToast } from '@/shared/hooks/useToast';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import { AIRecommendation } from '@/shared/types/entities';
 
@@ -16,6 +17,7 @@ function AIAssistant() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
   const [loading, setLoading] = useState(false);
@@ -70,6 +72,10 @@ function AIAssistant() {
     mutationFn: entities.aiRecommendation.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-recommendations-entities'] });
+      showSuccess(t('common.save') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -78,6 +84,10 @@ function AIAssistant() {
       entities.aiRecommendation.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-recommendations-entities'] });
+      showSuccess(t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -99,8 +109,11 @@ function AIAssistant() {
         transactions: transactions.flat(),
       });
       setAnswer(response);
+      showSuccess(t('common.success'));
     } catch (error) {
-      setAnswer('Sorry, I encountered an error. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
+      setAnswer(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }

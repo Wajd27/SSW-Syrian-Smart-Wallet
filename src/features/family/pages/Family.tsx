@@ -11,6 +11,7 @@ import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import { useToast } from '@/shared/hooks/useToast';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { FamilyMember } from '@/shared/types/entities';
 
@@ -18,6 +19,7 @@ function Family() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [formData, setFormData] = useState({
@@ -41,6 +43,10 @@ function Family() {
       queryClient.invalidateQueries({ queryKey: ['family-members'] });
       setIsModalOpen(false);
       resetForm();
+      showSuccess(t('family.addMember') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -52,6 +58,10 @@ function Family() {
       setIsModalOpen(false);
       setEditingMember(null);
       resetForm();
+      showSuccess(t('family.editMember') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -60,6 +70,10 @@ function Family() {
       entities.familyMember.update(id, { is_active }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['family-members'] });
+      showSuccess(t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -68,6 +82,10 @@ function Family() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['family-members'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showSuccess(t('common.delete') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 

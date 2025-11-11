@@ -11,6 +11,7 @@ import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import { useToast } from '@/shared/hooks/useToast';
 import { PlusIcon, PencilIcon, PlayIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { RecurringTransaction } from '@/shared/types/entities';
 
@@ -18,6 +19,7 @@ function Recurring() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState<RecurringTransaction | null>(null);
   
@@ -73,6 +75,10 @@ function Recurring() {
       queryClient.invalidateQueries({ queryKey: ['recurring-transactions'] });
       setIsModalOpen(false);
       resetForm();
+      showSuccess(t('recurring.addRecurring') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -84,6 +90,10 @@ function Recurring() {
       setIsModalOpen(false);
       setEditingRecurring(null);
       resetForm();
+      showSuccess(t('recurring.editRecurring') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -92,6 +102,10 @@ function Recurring() {
       entities.recurringTransaction.update(id, { is_active }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-transactions'] });
+      showSuccess(t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -115,6 +129,10 @@ function Recurring() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showSuccess(t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -123,6 +141,10 @@ function Recurring() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurring-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showSuccess(t('common.delete') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 

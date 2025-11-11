@@ -695,12 +695,12 @@ router.post('/debt', async (req: AuthRequest, res) => {
   const result = await sql`
     INSERT INTO debts (
       wallet_owner, name, type, original_amount, current_balance, minimum_payment,
-      interest_rate, due_date, creditor, is_active
+      interest_rate, due_date, creditor, currency, is_active
     )
     VALUES (
       ${data.wallet_owner}, ${data.name}, ${data.type}, ${data.original_amount},
       ${data.current_balance}, ${data.minimum_payment}, ${data.interest_rate || 0},
-      ${data.due_date || null}, ${data.creditor || null}, ${data.is_active ?? true}
+      ${data.due_date || null}, ${data.creditor || null}, ${data.currency || 'SYP'}, ${data.is_active ?? true}
     )
     RETURNING *
   `;
@@ -710,7 +710,7 @@ router.post('/debt', async (req: AuthRequest, res) => {
 router.patch('/debt/:id', async (req: AuthRequest, res) => {
   try {
     const updates = req.body;
-    const allowedFields = ['name', 'type', 'original_amount', 'current_balance', 'minimum_payment', 'interest_rate', 'due_date', 'creditor', 'is_active'];
+    const allowedFields = ['name', 'type', 'original_amount', 'current_balance', 'minimum_payment', 'interest_rate', 'due_date', 'creditor', 'currency', 'is_active'];
     const filteredUpdates: Record<string, any> = {};
     
     for (const field of allowedFields) {

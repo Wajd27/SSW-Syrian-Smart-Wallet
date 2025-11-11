@@ -8,6 +8,7 @@ import AppRoutes from './routes/AppRoutes';
 import ErrorBoundary from '@/shared/components/ErrorBoundary/ErrorBoundary';
 import NotificationMonitor from '@/features/notifications/components/NotificationMonitor';
 import InstallPrompt from '@/shared/components/InstallPrompt/InstallPrompt';
+import ToastContainer from '@/shared/components/Toast/ToastContainer';
 import { initializeAudioOnInteraction } from '@/shared/utils/sounds';
 
 const queryClient = new QueryClient({
@@ -33,6 +34,7 @@ function App() {
             <AuthProvider>
               <NotificationMonitor />
               <InstallPrompt />
+              <ToastContainer />
               <AppRoutes />
             </AuthProvider>
           </BrowserRouter>

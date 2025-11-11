@@ -11,6 +11,7 @@ import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import { useToast } from '@/shared/hooks/useToast';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Debt } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -19,6 +20,7 @@ function Debts() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
   const [formData, setFormData] = useState({
@@ -48,6 +50,10 @@ function Debts() {
       queryClient.invalidateQueries({ queryKey: ['debts'] });
       setIsModalOpen(false);
       resetForm();
+      showSuccess(t('debts.addDebt') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -59,6 +65,10 @@ function Debts() {
       setIsModalOpen(false);
       setEditingDebt(null);
       resetForm();
+      showSuccess(t('debts.editDebt') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -67,6 +77,10 @@ function Debts() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['debts'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showSuccess(t('common.delete') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 

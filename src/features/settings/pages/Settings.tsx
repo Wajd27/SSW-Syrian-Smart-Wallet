@@ -7,6 +7,7 @@ import Button from '@/shared/components/Button/Button';
 import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import { useToast } from '@/shared/hooks/useToast';
 
 function Settings() {
   const { t } = useTranslation();
@@ -28,10 +29,16 @@ function Settings() {
     },
   });
 
+  const { showSuccess, showError } = useToast();
+
   const updateMutation = useMutation({
     mutationFn: updateUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      showSuccess(t('common.save') + ' ' + t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -259,7 +266,7 @@ function Settings() {
 
       {/* Developer Info */}
       <Card className="mt-8">
-        <div className="text-center py-4">
+        <div className="text-left rtl:text-right py-4">
           <p className="text-sm text-gray-600">
             {t('settings.developedBy') || 'Developed by'} <span className="font-semibold text-gray-800">Wajd Hannoun</span>
           </p>

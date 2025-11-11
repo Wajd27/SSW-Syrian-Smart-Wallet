@@ -24,7 +24,7 @@ function Layout({ children }: LayoutProps) {
       </div>
       <footer className="glass-card backdrop-blur-xl bg-white/20 border-t border-white/30 py-3 mt-auto">
         <div className="px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
+          <div className="text-left rtl:text-right">
             <p className="text-sm text-gray-600">
               {t('settings.developedBy') || 'Developed by'} <span className="font-semibold text-gray-800">Wajd Hannoun</span>
             </p>

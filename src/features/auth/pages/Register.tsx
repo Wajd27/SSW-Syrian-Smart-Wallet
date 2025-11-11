@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '@/shared/hooks/useToast';
 
 function Register() {
   const { t } = useTranslation();
   const { register } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -20,7 +22,9 @@ function Register() {
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      const errorMessage = 'Passwords do not match';
+      setError(errorMessage);
+      showError(errorMessage);
       return;
     }
 
@@ -28,8 +32,11 @@ function Register() {
 
     try {
       await register(formData.email, formData.password, formData.fullName);
+      showSuccess(t('auth.registerSuccess'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      setError(errorMessage);
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -11,6 +11,7 @@ import Select from '@/shared/components/Forms/Select';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useFeedback } from '@/shared/hooks/useFeedback';
+import { useToast } from '@/shared/hooks/useToast';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Budget } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -20,6 +21,7 @@ function Budgets() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { triggerFeedback } = useFeedback();
+  const { showSuccess, showError } = useToast();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
   const [formData, setFormData] = useState({
@@ -71,9 +73,11 @@ function Budgets() {
       setIsModalOpen(false);
       resetForm();
       triggerFeedback('success');
+      showSuccess(t('budgets.addBudget') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -86,9 +90,11 @@ function Budgets() {
       setEditingBudget(null);
       resetForm();
       triggerFeedback('success');
+      showSuccess(t('budgets.editBudget') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 
@@ -98,9 +104,11 @@ function Budgets() {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       triggerFeedback('success');
+      showSuccess(t('common.delete') + ' ' + t('common.success'));
     },
-    onError: () => {
+    onError: (error: Error) => {
       triggerFeedback('error');
+      showError(error.message || t('common.error'));
     },
   });
 

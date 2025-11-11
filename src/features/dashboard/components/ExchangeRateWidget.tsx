@@ -6,12 +6,14 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import Card from '@/shared/components/Card/Card';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import Button from '@/shared/components/Button/Button';
+import { useToast } from '@/shared/hooks/useToast';
 import { CurrencyDollarIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 function ExchangeRateWidget() {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
   const [liveRate, setLiveRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -26,6 +28,10 @@ function ExchangeRateWidget() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
+      showSuccess(t('common.success'));
+    },
+    onError: (error: Error) => {
+      showError(error.message || t('common.error'));
     },
   });
 
