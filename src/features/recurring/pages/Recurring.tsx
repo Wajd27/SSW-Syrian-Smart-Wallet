@@ -10,6 +10,7 @@ import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { PlusIcon, PencilIcon, PlayIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { RecurringTransaction } from '@/shared/types/entities';
 
@@ -195,9 +196,10 @@ function Recurring() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('recurring.title')}</h1>
+    <PullToRefresh queryKeys={['recurring-transactions', 'wallets', 'family-members']}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">{t('recurring.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('recurring.addRecurring')}
@@ -398,7 +400,8 @@ function Recurring() {
           </div>
         </form>
       </Modal>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

@@ -7,6 +7,7 @@ import LineChart from '@/shared/components/Charts/LineChart';
 import BarChart from '@/shared/components/Charts/BarChart';
 import PieChart from '@/shared/components/Charts/PieChart';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { formatCurrency } from '@/shared/lib/formatters';
 
 function Reports() {
@@ -108,8 +109,9 @@ function Reports() {
   }) || [];
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
+    <PullToRefresh queryKeys={['wallets', 'transactions', 'investments', 'reports']}>
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
 
       {/* Financial Summary */}
       <Card title={t('reports.financialSummary')}>
@@ -158,7 +160,8 @@ function Reports() {
           <BarChart data={investmentPerformance} dataKeys={['Return']} height={300} />
         </Card>
       )}
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

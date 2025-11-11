@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, ReactNode } from 'react';
+import { useEffect, useState, useRef, ReactNode, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useFeedback } from '@/shared/hooks/useFeedback';
@@ -9,6 +9,7 @@ interface PullToRefreshProps {
   queryKeys?: string[];
   threshold?: number;
   disabled?: boolean;
+  showRefreshButton?: boolean; // Show refresh button on desktop
 }
 
 function PullToRefresh({
@@ -17,15 +18,67 @@ function PullToRefresh({
   queryKeys = [],
   threshold = 80,
   disabled = false,
+  showRefreshButton = true, // Default to true
 }: PullToRefreshProps) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
   const startY = useRef<number>(0);
   const currentY = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const { triggerFeedback } = useFeedback();
+
+  // Detect if device is desktop (has mouse, not touch-only)
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      // Check if device has mouse capability and is not primarily touch
+      const hasMouse = window.matchMedia('(pointer: fine)').matches;
+      const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      setIsDesktop(hasMouse && (!hasTouch || window.innerWidth >= 768));
+    };
+
+    checkIsDesktop();
+    window.addEventListener('resize', checkIsDesktop);
+    return () => window.removeEventListener('resize', checkIsDesktop);
+  }, []);
+
+  // Refresh handler function
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+
+    setIsRefreshing(true);
+    triggerFeedback('click');
+
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
+
+      // Invalidate specified query keys
+      if (queryKeys.length > 0) {
+        queryKeys.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: [key] });
+        });
+      } else {
+        // Invalidate all queries if no specific keys provided
+        queryClient.invalidateQueries();
+      }
+
+      // Wait a bit for the refresh to complete
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      // Success feedback when refresh completes
+      triggerFeedback('success');
+    } catch (error) {
+      console.error('Refresh error:', error);
+      triggerFeedback('error');
+    } finally {
+      setIsRefreshing(false);
+      setPullDistance(0);
+    }
+  }, [isRefreshing, onRefresh, queryKeys, queryClient, triggerFeedback]);
 
   useEffect(() => {
     if (disabled) return;
@@ -57,38 +110,7 @@ function PullToRefresh({
       if (!isPulling) return;
 
       if (pullDistance >= threshold) {
-        setIsRefreshing(true);
-        setPullDistance(threshold);
-        // Light vibration when threshold reached
-        triggerFeedback('click');
-
-        try {
-          if (onRefresh) {
-            await onRefresh();
-          }
-
-          // Invalidate specified query keys
-          if (queryKeys.length > 0) {
-            queryKeys.forEach((key) => {
-              queryClient.invalidateQueries({ queryKey: [key] });
-            });
-          } else {
-            // Invalidate all queries if no specific keys provided
-            queryClient.invalidateQueries();
-          }
-
-          // Wait a bit for the refresh to complete
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          
-          // Success feedback when refresh completes
-          triggerFeedback('success');
-        } catch (error) {
-          console.error('Refresh error:', error);
-          triggerFeedback('error');
-        } finally {
-          setIsRefreshing(false);
-          setPullDistance(0);
-        }
+        await handleRefresh();
       } else {
         setPullDistance(0);
       }
@@ -107,14 +129,32 @@ function PullToRefresh({
       container.removeEventListener('touchmove', handleTouchMove);
       container.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isPulling, pullDistance, threshold, onRefresh, queryKeys, queryClient, disabled]);
+  }, [isPulling, pullDistance, threshold, disabled, handleRefresh, triggerFeedback]);
 
   const pullProgress = Math.min(pullDistance / threshold, 1);
   const shouldShowIndicator = pullDistance > 10 || isRefreshing;
 
   return (
     <div ref={containerRef} className="relative h-full overflow-auto">
-      {/* Pull to Refresh Indicator */}
+      {/* Desktop Refresh Button */}
+      {isDesktop && showRefreshButton && (
+        <div className="fixed top-20 right-4 z-40 lg:top-24 lg:right-8 rtl:right-auto rtl:left-4 rtl:lg:left-8">
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="glass-card backdrop-blur-xl bg-white/30 border border-white/40 rounded-full p-3 shadow-lg hover:bg-white/40 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh"
+          >
+            <ArrowPathIcon
+              className={`w-5 h-5 text-gray-700 transition-transform duration-300 ${
+                isRefreshing ? 'animate-spin' : ''
+              }`}
+            />
+          </button>
+        </div>
+      )}
+
+      {/* Pull to Refresh Indicator (Mobile) */}
       {shouldShowIndicator && (
         <div
           className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center transition-all duration-300"
