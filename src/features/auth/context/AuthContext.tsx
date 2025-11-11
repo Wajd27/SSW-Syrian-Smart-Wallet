@@ -65,18 +65,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const response = await authApi.login({ email, password });
+    // Update user state first
     setUser(response.user);
-    // Use requestAnimationFrame to ensure navigation happens after render
-    requestAnimationFrame(() => {
+    // Defer navigation to next event loop tick to avoid React error #426
+    // This ensures state update completes before navigation triggers re-render
+    Promise.resolve().then(() => {
       navigate('/', { replace: true });
     });
   };
 
   const register = async (email: string, password: string, fullName: string) => {
     const response = await authApi.register({ email, password, full_name: fullName });
+    // Update user state first
     setUser(response.user);
-    // Use requestAnimationFrame to ensure navigation happens after render
-    requestAnimationFrame(() => {
+    // Defer navigation to next event loop tick to avoid React error #426
+    // This ensures state update completes before navigation triggers re-render
+    Promise.resolve().then(() => {
       navigate('/', { replace: true });
     });
   };

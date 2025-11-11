@@ -28,10 +28,12 @@ function SafeRedirect({ to }: { to: string }) {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Use requestAnimationFrame to ensure this happens after render
-    requestAnimationFrame(() => {
+    // Use setTimeout to ensure this happens after render cycle completes
+    const timer = setTimeout(() => {
       navigate(to, { replace: true });
-    });
+    }, 0);
+    
+    return () => clearTimeout(timer);
   }, [navigate, to]);
 
   return <LoadingSpinner size="lg" className="min-h-screen" />;
@@ -40,12 +42,29 @@ function SafeRedirect({ to }: { to: string }) {
 // Wrapper component to handle auth redirects
 function AuthRouteWrapper({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const [shouldRedirect, setShouldRedirect] = React.useState(false);
+
+  // Use useEffect to handle redirect after render completes
+  // This prevents React error #426 by ensuring redirect happens after render cycle
+  useEffect(() => {
+    if (!loading && user) {
+      // Defer redirect to next tick to avoid updating during render
+      const timer = setTimeout(() => {
+        setShouldRedirect(true);
+      }, 0);
+      return () => clearTimeout(timer);
+    } else if (!loading && !user) {
+      // Reset redirect flag when user logs out
+      setShouldRedirect(false);
+    }
+  }, [user, loading]);
 
   if (loading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
 
-  if (user) {
+  // Only redirect if flag is set (after useEffect runs)
+  if (shouldRedirect) {
     return <SafeRedirect to="/" />;
   }
 
