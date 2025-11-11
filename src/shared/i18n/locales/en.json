@@ -29,7 +29,11 @@
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "deleteConfirmation": "Delete Confirmation",
     "gotIt": "Got it",
-    "later": "Later"
+    "later": "Later",
+    "update": "Update",
+    "updateAvailable": "Update Available",
+    "updateAvailableMessage": "A new version of the app is available. Would you like to update now?",
+    "refresh": "Refresh"
   },
   "install": {
     "installApp": "Install App",

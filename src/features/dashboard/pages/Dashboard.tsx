@@ -10,6 +10,8 @@ import CategoryDistributionChart from '../components/CategoryDistributionChart';
 import RecurringProcessor from '../components/RecurringProcessor';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import Card from '@/shared/components/Card/Card';
+import Button from '@/shared/components/Button/Button';
 import {
   WalletIcon,
   ArrowUpIcon,
@@ -21,16 +23,17 @@ function Dashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
 
-  const { data: wallets, isLoading: walletsLoading } = useQuery({
+  const { data: wallets, isLoading: walletsLoading, error: walletsError } = useQuery({
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    retry: 1,
   });
 
-  const { data: transactions, isLoading: transactionsLoading } = useQuery({
+  const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
     queryKey: ['transactions', 'summary', user?.email],
     queryFn: async () => {
       if (!user?.email || !wallets || wallets.length === 0) return [];
@@ -41,16 +44,35 @@ function Dashboard() {
       return allTransactions.flat();
     },
     enabled: !!user?.email && !!wallets && wallets.length > 0,
+    retry: 1,
   });
 
-  const { data: familyMembers, isLoading: familyLoading } = useQuery({
+  const { data: familyMembers, isLoading: familyLoading, error: familyError } = useQuery({
     queryKey: ['family-members', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    retry: 1,
   });
+
+  // Show error state if any query failed
+  if (walletsError || transactionsError || familyError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('common.error')}</h2>
+          <p className="text-gray-600 mb-4">
+            {walletsError?.message || transactionsError?.message || familyError?.message || t('common.error')}
+          </p>
+          <Button onClick={() => window.location.reload()}>
+            {t('common.refresh') || 'Refresh Page'}
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   if (walletsLoading || (transactionsLoading && wallets && wallets.length > 0) || familyLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;

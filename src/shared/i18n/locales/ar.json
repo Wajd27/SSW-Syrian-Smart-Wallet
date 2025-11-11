@@ -29,7 +29,11 @@
     "confirmDelete": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
     "deleteConfirmation": "تأكيد الحذف",
     "gotIt": "فهمت",
-    "later": "لاحقاً"
+    "later": "لاحقاً",
+    "update": "تحديث",
+    "updateAvailable": "تحديث متاح",
+    "updateAvailableMessage": "إصدار جديد من التطبيق متاح. هل تريد التحديث الآن؟",
+    "refresh": "تحديث"
   },
   "install": {
     "installApp": "تثبيت التطبيق",
