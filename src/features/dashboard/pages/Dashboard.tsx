@@ -13,8 +13,6 @@ import FinancialHealthOverview from '../components/FinancialHealthOverview';
 import FamilySpendingWidget from '../components/FamilySpendingWidget';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
-import Card from '@/shared/components/Card/Card';
-import Button from '@/shared/components/Button/Button';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import {
   WalletIcon,
@@ -31,62 +29,74 @@ function Dashboard() {
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      return entities.wallet.filter({ owner_email: user.email, is_active: true });
+      try {
+        return await entities.wallet.filter({ owner_email: user.email, is_active: true });
+      } catch (error) {
+        console.error('Error fetching wallets:', error);
+        return [];
+      }
     },
     enabled: !!user?.email,
     retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
     queryKey: ['transactions', 'summary', user?.email, selectedFamilyMember],
     queryFn: async () => {
       if (!user?.email || !wallets || wallets.length === 0) return [];
-      const walletIds = wallets.map((w) => w.id);
-      const allTransactions = await Promise.all(
-        walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
-      );
-      let filtered = allTransactions.flat();
-      
-      // Filter by selected family member if not viewing as owner
-      if (selectedFamilyMember && selectedFamilyMember !== 'owner') {
-        filtered = filtered.filter((t) => t.family_member_id === selectedFamilyMember.id);
-      } else if (selectedFamilyMember === 'owner') {
-        // Show only owner transactions (no family_member_id)
-        filtered = filtered.filter((t) => !t.family_member_id);
+      try {
+        const walletIds = wallets.map((w) => w.id);
+        const allTransactions = await Promise.all(
+          walletIds.map((id) => entities.transaction.filter({ wallet_id: id }).catch(() => []))
+        );
+        let filtered = allTransactions.flat();
+        
+        // Filter by selected family member if not viewing as owner
+        if (selectedFamilyMember && selectedFamilyMember !== 'owner') {
+          filtered = filtered.filter((t) => t.family_member_id === selectedFamilyMember.id);
+        } else if (selectedFamilyMember === 'owner') {
+          // Show only owner transactions (no family_member_id)
+          filtered = filtered.filter((t) => !t.family_member_id);
+        }
+        // If selectedFamilyMember is null, show all (default behavior)
+        
+        return filtered;
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+        return [];
       }
-      // If selectedFamilyMember is null, show all (default behavior)
-      
-      return filtered;
     },
     enabled: !!user?.email && !!wallets && wallets.length > 0,
     retry: 1,
+    refetchOnWindowFocus: false,
   });
 
   const { data: familyMembers, isLoading: familyLoading, error: familyError } = useQuery({
     queryKey: ['family-members', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
-      return entities.familyMember.filter({ added_by: user.email, is_active: true });
+      try {
+        return await entities.familyMember.filter({ added_by: user.email, is_active: true });
+      } catch (error) {
+        console.error('Error fetching family members:', error);
+        return [];
+      }
     },
     enabled: !!user?.email,
     retry: 1,
+    refetchOnWindowFocus: false,
   });
 
-  // Show error state if any query failed
-  if (walletsError || transactionsError || familyError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">{t('common.error')}</h2>
-          <p className="text-gray-600 mb-4">
-            {walletsError?.message || transactionsError?.message || familyError?.message || t('common.error')}
-          </p>
-          <Button onClick={() => window.location.reload()}>
-            {t('common.refresh') || 'Refresh Page'}
-          </Button>
-        </Card>
-      </div>
-    );
+  // Log errors but don't block rendering - use empty arrays as fallback
+  if (walletsError) {
+    console.error('Wallets error:', walletsError);
+  }
+  if (transactionsError) {
+    console.error('Transactions error:', transactionsError);
+  }
+  if (familyError) {
+    console.error('Family members error:', familyError);
   }
 
   if (walletsLoading || (transactionsLoading && wallets && wallets.length > 0) || familyLoading) {
