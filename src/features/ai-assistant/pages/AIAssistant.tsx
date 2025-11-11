@@ -6,7 +6,6 @@ import { aiApi } from '@/shared/api/ai';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import Card from '@/shared/components/Card/Card';
 import Button from '@/shared/components/Button/Button';
-import Input from '@/shared/components/Forms/Input';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import { useToast } from '@/shared/hooks/useToast';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
@@ -331,6 +330,7 @@ function AIAssistant() {
               </Button>
             )}
           </div>
+        </div>
         </div>
       </div>
 
