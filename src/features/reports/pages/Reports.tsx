@@ -260,7 +260,7 @@ function Reports() {
     <PullToRefresh queryKeys={['wallets', 'transactions', 'investments', 'reports']}>
       <div className="space-y-6">
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
           <InfoTooltip content={t('reports.info')} />
         </div>
 

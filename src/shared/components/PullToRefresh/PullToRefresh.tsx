@@ -87,8 +87,9 @@ function PullToRefresh({
     if (!container) return;
 
     const handleTouchStart = (e: TouchEvent) => {
-      // Only trigger if at the top of the scrollable area
-      if (container.scrollTop === 0) {
+      // Only trigger if at the top of the scrollable area (with small tolerance)
+      // This prevents accidental refresh when user is trying to scroll up
+      if (container.scrollTop <= 5) {
         startY.current = e.touches[0].clientY;
         setIsPulling(true);
       }
@@ -100,9 +101,21 @@ function PullToRefresh({
       currentY.current = e.touches[0].clientY;
       const distance = Math.max(0, currentY.current - startY.current);
 
-      if (distance > 0 && container.scrollTop === 0) {
-        e.preventDefault();
+      // Only allow pull-to-refresh if:
+      // 1. User is pulling down (distance > 0)
+      // 2. Container is at the top (scrollTop <= 5 for tolerance)
+      // 3. User started from the top (startY is valid)
+      if (distance > 0 && container.scrollTop <= 5 && startY.current > 0) {
+        // Only prevent default if user is actually pulling down significantly
+        if (distance > 10) {
+          e.preventDefault();
+        }
         setPullDistance(Math.min(distance, threshold * 1.5));
+      } else if (container.scrollTop > 5) {
+        // If user scrolled down, cancel pull-to-refresh
+        setIsPulling(false);
+        setPullDistance(0);
+        startY.current = 0;
       }
     };
 
@@ -136,17 +149,18 @@ function PullToRefresh({
 
   return (
     <div ref={containerRef} className="relative h-full overflow-auto">
-      {/* Desktop Refresh Button */}
+      {/* Desktop Refresh Button - Positioned to avoid conflicts with action buttons */}
+      {/* Moved to top-left area to avoid overlapping with add buttons which are usually top-right */}
       {isDesktop && showRefreshButton && (
-        <div className="fixed top-20 right-4 z-40 lg:top-24 lg:right-8 rtl:right-auto rtl:left-4 rtl:lg:left-8">
+        <div className="fixed top-20 left-4 z-30 lg:top-24 lg:left-8 rtl:left-auto rtl:right-4 rtl:lg:right-8">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="glass-card backdrop-blur-xl bg-white/30 border border-white/40 rounded-full p-3 shadow-lg hover:bg-white/40 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="glass-card backdrop-blur-xl bg-white/30 border border-white/40 rounded-full p-2.5 sm:p-3 shadow-lg hover:bg-white/40 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh"
           >
             <ArrowPathIcon
-              className={`w-5 h-5 text-gray-700 transition-transform duration-300 ${
+              className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-700 transition-transform duration-300 ${
                 isRefreshing ? 'animate-spin' : ''
               }`}
             />

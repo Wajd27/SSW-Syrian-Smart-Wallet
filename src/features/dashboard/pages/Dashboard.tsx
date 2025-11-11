@@ -226,7 +226,7 @@ function Dashboard() {
       <div className="space-y-6 animate-fade-in">
         <RecurringProcessor />
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('dashboard.title')}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800 drop-shadow-sm">{t('dashboard.title')}</h1>
           <InfoTooltip
             content={t('dashboard.info') || 'The dashboard shows your complete financial status. All your wallets, transactions, budgets, savings goals, investments, and debts work together to calculate your net worth and financial health score. Use this overview to understand your financial position at a glance.'}
           />

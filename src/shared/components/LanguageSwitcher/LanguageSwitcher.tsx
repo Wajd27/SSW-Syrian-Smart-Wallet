@@ -23,11 +23,11 @@ function LanguageSwitcher() {
   return (
     <button
       onClick={toggleLanguage}
-      className="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-blue-50/60 transition-colors flex items-center"
+      className="p-1.5 sm:p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-blue-50/60 transition-colors flex items-center"
       title={i18n.language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
     >
-      <GlobeAltIcon className="w-5 h-5" />
-      <span className="ml-1 rtl:ml-0 rtl:mr-1 text-sm font-medium">{i18n.language === 'ar' ? 'EN' : 'AR'}</span>
+      <GlobeAltIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+      <span className="ml-1 rtl:ml-0 rtl:mr-1 text-xs sm:text-sm font-medium hidden sm:inline">{i18n.language === 'ar' ? 'EN' : 'AR'}</span>
     </button>
   );
 }

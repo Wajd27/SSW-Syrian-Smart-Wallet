@@ -308,24 +308,41 @@ function Budgets() {
   return (
     <PullToRefresh queryKeys={['budgets', 'transactions', 'wallets']}>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('budgets.title')}</h1>
-            <InfoTooltip content={t('budgets.info')} />
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 rtl:space-x-reverse">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 drop-shadow-sm">{t('budgets.title')}</h1>
+              <InfoTooltip content={t('budgets.info')} />
+            </div>
           </div>
-        <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <Button variant="secondary" onClick={() => setIsTemplateModalOpen(true)}>
-            {t('budgets.useTemplate') || 'Use Template'}
-          </Button>
-          <Button variant="secondary" onClick={copyLastMonth}>
-            {t('budgets.copyLastMonth') || 'Copy Last Month'}
-          </Button>
-          <Button onClick={() => handleOpenModal()}>
-            <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
-            {t('budgets.addBudget')}
-          </Button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2 sm:justify-end">
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsTemplateModalOpen(true)}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              <span className="text-xs sm:text-sm">{t('budgets.useTemplate') || 'Use Template'}</span>
+            </Button>
+            <Button 
+              variant="secondary" 
+              onClick={copyLastMonth}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              <span className="text-xs sm:text-sm">{t('budgets.copyLastMonth') || 'Copy Last Month'}</span>
+            </Button>
+            <Button 
+              onClick={() => handleOpenModal()}
+              size="sm"
+              className="w-full sm:w-auto"
+            >
+              <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 rtl:ml-0 rtl:mr-2" />
+              <span className="hidden sm:inline">{t('budgets.addBudget')}</span>
+              <span className="sm:hidden">{t('budgets.add') || 'Add'}</span>
+            </Button>
+          </div>
         </div>
-      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {budgets?.map((budget, index) => {

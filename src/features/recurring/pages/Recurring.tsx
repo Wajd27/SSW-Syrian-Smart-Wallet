@@ -224,16 +224,21 @@ function Recurring() {
   return (
     <PullToRefresh queryKeys={['recurring-transactions', 'wallets', 'family-members']}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <h1 className="text-2xl font-bold text-gray-900">{t('recurring.title')}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('recurring.title')}</h1>
             <InfoTooltip content={t('recurring.info')} />
           </div>
-        <Button onClick={() => handleOpenModal()}>
-          <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
-          {t('recurring.addRecurring')}
-        </Button>
-      </div>
+          <Button 
+            onClick={() => handleOpenModal()}
+            size="sm"
+            className="w-full sm:w-auto"
+          >
+            <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 rtl:ml-0 rtl:mr-2" />
+            <span className="hidden sm:inline">{t('recurring.addRecurring')}</span>
+            <span className="sm:hidden">{t('recurring.add') || 'Add'}</span>
+          </Button>
+        </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {recurringTransactions?.map((recurring) => {

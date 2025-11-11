@@ -44,29 +44,31 @@ function Header({ onMenuClick }: HeaderProps) {
               <img
                 src="/AppImages/android/android-launchericon-48-48.png"
                 alt={t('common.appName')}
-                className="h-8 w-8 rounded-lg"
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg"
               />
-              <h1 className="text-xl font-semibold text-gray-800 drop-shadow-sm">
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-800 drop-shadow-sm truncate max-w-[120px] sm:max-w-none">
                 {t('common.appName')}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center space-x-4 rtl:space-x-reverse">
+          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 rtl:space-x-reverse">
             <button
               onClick={() => setIsGuideOpen(true)}
-              className="p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300"
+              className="p-1.5 sm:p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300"
               title={t('userGuide.help')}
             >
-              <QuestionMarkCircleIcon className="h-6 w-6" />
+              <QuestionMarkCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
-            <InstallButton />
+            <div className="hidden sm:block">
+              <InstallButton />
+            </div>
             <NotificationBell />
             <LanguageSwitcher />
             <FamilyMemberSwitcher />
             {user && (
-              <div className="hidden sm:flex items-center space-x-2 rtl:space-x-reverse">
-                <div className="text-sm text-gray-700 font-medium">
+              <div className="hidden lg:flex items-center space-x-2 rtl:space-x-reverse">
+                <div className="text-xs sm:text-sm text-gray-700 font-medium truncate max-w-[100px] xl:max-w-none">
                   {user.full_name || user.email}
                 </div>
               </div>
