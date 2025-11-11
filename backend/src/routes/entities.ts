@@ -715,7 +715,18 @@ router.patch('/debt/:id', async (req: AuthRequest, res) => {
     
     for (const field of allowedFields) {
       if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
+        // Skip currency if column doesn't exist (will be added via migration)
+        if (field === 'currency') {
+          // Try to check if column exists, if not skip it
+          try {
+            filteredUpdates[field] = updates[field];
+          } catch {
+            // Column doesn't exist, skip it
+            continue;
+          }
+        } else {
+          filteredUpdates[field] = updates[field];
+        }
       }
     }
 
@@ -730,6 +741,30 @@ router.patch('/debt/:id', async (req: AuthRequest, res) => {
     res.json(result[0]);
   } catch (error: any) {
     console.error('Update debt error:', error);
+    // If error is about currency column, try without it
+    if (error.message?.includes('currency') && updates.currency !== undefined) {
+      const updatesWithoutCurrency = { ...updates };
+      delete updatesWithoutCurrency.currency;
+      const allowedFields = ['name', 'type', 'original_amount', 'current_balance', 'minimum_payment', 'interest_rate', 'due_date', 'creditor', 'is_active'];
+      const filteredUpdates: Record<string, any> = {};
+      
+      for (const field of allowedFields) {
+        if (updatesWithoutCurrency[field] !== undefined) {
+          filteredUpdates[field] = updatesWithoutCurrency[field];
+        }
+      }
+
+      if (Object.keys(filteredUpdates).length > 0) {
+        try {
+          const result = await updateEntity('debts', req.params.id, filteredUpdates, 'wallet_owner', req.user!.email);
+          if (result.length > 0) {
+            return res.json(result[0]);
+          }
+        } catch (retryError: any) {
+          return res.status(500).json({ error: retryError.message || 'Failed to update debt' });
+        }
+      }
+    }
     res.status(500).json({ error: error.message || 'Failed to update debt' });
   }
 });

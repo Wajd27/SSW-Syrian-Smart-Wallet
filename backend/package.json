@@ -6,7 +6,8 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "migrate": "tsx src/db/migrate.ts"
+    "migrate": "tsx src/db/migrate.ts",
+    "migrate:run": "tsx src/db/run-migration.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.81.0",
