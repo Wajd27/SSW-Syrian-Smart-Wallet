@@ -10,7 +10,7 @@ import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import { PlusIcon, PencilIcon, PlayIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, PlayIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { RecurringTransaction } from '@/shared/types/entities';
 
 function Recurring() {
@@ -116,6 +116,20 @@ function Recurring() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => entities.recurringTransaction.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurring-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const handleDelete = (id: string, title: string) => {
+    if (window.confirm(t('common.confirmDelete', { name: title }))) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -245,6 +259,14 @@ function Recurring() {
                   }
                 >
                   {recurring.is_active ? t('common.deactivate') : t('common.activate')}
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDelete(recurring.id, recurring.title)}
+                  isLoading={deleteMutation.isPending}
+                >
+                  <TrashIcon className="w-4 h-4" />
                 </Button>
                 {recurring.is_active && (
                   <Button

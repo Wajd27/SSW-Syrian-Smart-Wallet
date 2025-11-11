@@ -10,7 +10,7 @@ import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SavingsGoal } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
 
@@ -78,6 +78,20 @@ function SavingsGoals() {
       resetForm();
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => entities.savingsGoal.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savings-goals'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const handleDelete = (id: string, title: string) => {
+    if (window.confirm(t('common.confirmDelete', { name: title }))) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -180,15 +194,22 @@ function SavingsGoals() {
                   </div>
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex items-center space-x-2 rtl:space-x-reverse">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleOpenModal(goal)}
-                  className="w-full"
+                  className="flex-1"
                 >
-                  <PencilIcon className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
-                  {t('common.edit')}
+                  <PencilIcon className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDelete(goal.id, goal.title)}
+                  isLoading={deleteMutation.isPending}
+                >
+                  <TrashIcon className="w-4 h-4" />
                 </Button>
               </div>
             </Card>

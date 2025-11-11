@@ -10,7 +10,7 @@ import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { FamilyMember } from '@/shared/types/entities';
 
 function Family() {
@@ -61,6 +61,20 @@ function Family() {
       queryClient.invalidateQueries({ queryKey: ['family-members'] });
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => entities.familyMember.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['family-members'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const handleDelete = (id: string, name: string) => {
+    if (window.confirm(t('common.confirmDelete', { name }))) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -146,6 +160,14 @@ function Family() {
                 onClick={() => handleOpenModal(member)}
               >
                 <PencilIcon className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleDelete(member.id, member.name)}
+                isLoading={deleteMutation.isPending}
+              >
+                <TrashIcon className="w-4 h-4" />
               </Button>
               <Button
                 variant={member.is_active ? 'secondary' : 'primary'}

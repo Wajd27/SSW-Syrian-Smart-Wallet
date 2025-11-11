@@ -11,7 +11,7 @@ import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LineChart from '@/shared/components/Charts/LineChart';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Investment } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
 
@@ -76,6 +76,20 @@ function Investments() {
       resetForm();
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => entities.investment.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['investments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const handleDelete = (id: string, name: string) => {
+    if (window.confirm(t('common.confirmDelete', { name }))) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -219,15 +233,22 @@ function Investments() {
                   <LineChart data={chartData} dataKeys={['value']} height={150} />
                 </div>
               )}
-              <div className="mt-4">
+              <div className="mt-4 flex items-center space-x-2 rtl:space-x-reverse">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleOpenModal(investment)}
-                  className="w-full"
+                  className="flex-1"
                 >
-                  <PencilIcon className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
-                  {t('common.edit')}
+                  <PencilIcon className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDelete(investment.id, investment.name)}
+                  isLoading={deleteMutation.isPending}
+                >
+                  <TrashIcon className="w-4 h-4" />
                 </Button>
               </div>
             </Card>

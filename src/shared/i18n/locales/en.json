@@ -25,7 +25,9 @@
     "active": "Active",
     "inactive": "Inactive",
     "activate": "Activate",
-    "deactivate": "Deactivate"
+    "deactivate": "Deactivate",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "deleteConfirmation": "Delete Confirmation"
   },
   "auth": {
     "login": "Login",

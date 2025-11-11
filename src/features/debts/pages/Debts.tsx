@@ -9,7 +9,7 @@ import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import { PlusIcon, PencilIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Debt } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
 
@@ -58,6 +58,20 @@ function Debts() {
       resetForm();
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => entities.debt.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['debts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const handleDelete = (id: string, name: string) => {
+    if (window.confirm(t('common.confirmDelete', { name }))) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -169,15 +183,22 @@ function Debts() {
                   </div>
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex items-center space-x-2 rtl:space-x-reverse">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => handleOpenModal(debt)}
-                  className="w-full"
+                  className="flex-1"
                 >
-                  <PencilIcon className="w-4 h-4 ml-2 rtl:ml-0 rtl:mr-2" />
-                  {t('common.edit')}
+                  <PencilIcon className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleDelete(debt.id, debt.name)}
+                  isLoading={deleteMutation.isPending}
+                >
+                  <TrashIcon className="w-4 h-4" />
                 </Button>
               </div>
             </Card>

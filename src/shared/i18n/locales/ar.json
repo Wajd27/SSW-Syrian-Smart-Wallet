@@ -25,7 +25,9 @@
     "active": "نشط",
     "inactive": "غير نشط",
     "activate": "تفعيل",
-    "deactivate": "إلغاء التفعيل"
+    "deactivate": "إلغاء التفعيل",
+    "confirmDelete": "هل أنت متأكد من حذف \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirmation": "تأكيد الحذف"
   },
   "auth": {
     "login": "تسجيل الدخول",

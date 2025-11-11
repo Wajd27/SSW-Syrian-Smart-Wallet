@@ -54,6 +54,20 @@ function Wallets() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => entities.wallet.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+
+  const handleDelete = (id: string, name: string) => {
+    if (window.confirm(t('common.confirmDelete', { name }))) {
+      deleteMutation.mutate(id);
+    }
+  };
+
 
   const resetForm = () => {
     setFormData({
@@ -153,15 +167,19 @@ function Wallets() {
                 <PencilIcon className="w-4 h-4" />
               </Button>
               <Button
-                variant="danger"
+                variant="secondary"
                 size="sm"
                 onClick={() => handleToggleActive(wallet)}
               >
-                {wallet.is_active ? (
-                  <TrashIcon className="w-4 h-4" />
-                ) : (
-                  <span>{t('common.restore')}</span>
-                )}
+                {wallet.is_active ? t('common.deactivate') : t('common.activate')}
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleDelete(wallet.id, wallet.name)}
+                isLoading={deleteMutation.isPending}
+              >
+                <TrashIcon className="w-4 h-4" />
               </Button>
             </div>
           </Card>
@@ -242,3 +260,4 @@ function Wallets() {
 }
 
 export default Wallets;
+
