@@ -11,6 +11,7 @@ import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { useState, useMemo } from 'react';
 import Button from '@/shared/components/Button/Button';
+import { useStableArray, useStableObject } from '@/shared/hooks/useStableValue';
 import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 
@@ -81,12 +82,15 @@ function Reports() {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
 
-  // Create stable key for transactions
-  const transactionsKeyForBuckets = transactions ? JSON.stringify(transactions.map(t => t?.transaction_date)) : '';
+  // Use stable array references to prevent unnecessary recalculations
+  const stableTransactions = useStableArray(transactions);
+  const stableInvestments = useStableArray(investments);
+  const stableFamilyMembers = useStableArray(familyMembers);
+  const stableFilters = useStableObject(filters);
   
   // Process data for charts
   const monthBuckets = useMemo(() => {
-    if (!transactions || !Array.isArray(transactions)) {
+    if (!stableTransactions || !Array.isArray(stableTransactions)) {
       return Array.from({ length: 6 }, (_, i) => {
         const date = new Date();
         date.setMonth(date.getMonth() - (5 - i));
@@ -94,7 +98,7 @@ function Reports() {
       });
     }
     const set = new Set<string>();
-    transactions.forEach((t) => {
+    stableTransactions.forEach((t) => {
       if (t && t.transaction_date) {
         set.add(t.transaction_date.slice(0, 7));
       }
@@ -105,18 +109,14 @@ function Reports() {
       date.setMonth(date.getMonth() - (5 - i));
       return date.toISOString().slice(0, 7);
     });
-  }, [transactionsKeyForBuckets]);
+  }, [stableTransactions]);
 
-  // Create stable keys
-  const monthBucketsKeyForIncomeExpense = monthBuckets ? JSON.stringify(monthBuckets) : '';
-  const transactionsKeyForIncomeExpense = transactions ? JSON.stringify(transactions.map(t => ({ transaction_date: t?.transaction_date, type: t?.type, amount_usd: t?.amount_usd, amount_syp: t?.amount_syp, primary_currency: t?.primary_currency }))) : '';
-  
   const incomeVsExpenseData = useMemo(() => {
-    if (!monthBuckets || !Array.isArray(monthBuckets) || !transactions || !Array.isArray(transactions)) {
+    if (!monthBuckets || !Array.isArray(monthBuckets) || !stableTransactions || !Array.isArray(stableTransactions)) {
       return [];
     }
     return monthBuckets.map((month) => {
-      const monthTransactions = transactions.filter((t) => t && t.transaction_date && t.transaction_date.startsWith(month));
+      const monthTransactions = stableTransactions.filter((t) => t && t.transaction_date && t.transaction_date.startsWith(month));
       const income = monthTransactions
         .filter((t) => t.type === 'income')
         .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
@@ -130,16 +130,14 @@ function Reports() {
         Expenses: expenses,
       };
     });
-  }, [monthBucketsKeyForIncomeExpense, transactionsKeyForIncomeExpense]);
+  }, [monthBuckets, stableTransactions]);
 
-  const transactionsKeyForCategory = transactions ? JSON.stringify(transactions.map(t => ({ type: t?.type, category: t?.category, amount_usd: t?.amount_usd, amount_syp: t?.amount_syp, primary_currency: t?.primary_currency }))) : '';
-  
   const categoryChartData = useMemo(() => {
-    if (!transactions || !Array.isArray(transactions)) {
+    if (!stableTransactions || !Array.isArray(stableTransactions)) {
       return [];
     }
     const categoryData = new Map<string, number>();
-    transactions.forEach((t) => {
+    stableTransactions.forEach((t) => {
       if (t && t.type === 'expense' && t.category) {
         const amount = t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp;
         categoryData.set(t.category, (categoryData.get(t.category) || 0) + amount);
@@ -149,35 +147,31 @@ function Reports() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
-  }, [transactionsKeyForCategory]);
+  }, [stableTransactions]);
 
-  const transactionsKeyForTotals = transactions ? JSON.stringify(transactions.map(t => ({ type: t?.type, amount_usd: t?.amount_usd, amount_syp: t?.amount_syp, primary_currency: t?.primary_currency }))) : '';
-  
   const totalIncome = useMemo(() => {
-    if (!transactions || !Array.isArray(transactions)) return 0;
-    return transactions.reduce((sum, t) => {
+    if (!stableTransactions || !Array.isArray(stableTransactions)) return 0;
+    return stableTransactions.reduce((sum, t) => {
       if (t && t.type === 'income') {
         return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
       }
       return sum;
     }, 0);
-  }, [transactionsKeyForTotals]);
+  }, [stableTransactions]);
 
   const totalExpenses = useMemo(() => {
-    if (!transactions || !Array.isArray(transactions)) return 0;
-    return transactions.reduce((sum, t) => {
+    if (!stableTransactions || !Array.isArray(stableTransactions)) return 0;
+    return stableTransactions.reduce((sum, t) => {
       if (t && t.type === 'expense') {
         return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
       }
       return sum;
     }, 0);
-  }, [transactionsKeyForTotals]);
+  }, [stableTransactions]);
 
-  const investmentsKey = investments ? JSON.stringify(investments.map(inv => ({ name: inv?.name, initial_amount: inv?.initial_amount, current_value: inv?.current_value }))) : '';
-  
   const investmentPerformance = useMemo(() => {
-    if (!investments || !Array.isArray(investments)) return [];
-    return investments.map((inv) => {
+    if (!stableInvestments || !Array.isArray(stableInvestments)) return [];
+    return stableInvestments.map((inv) => {
       if (!inv || !inv.name || inv.initial_amount === 0) return null;
       const returnPercentage =
         ((inv.current_value - inv.initial_amount) / inv.initial_amount) * 100;
@@ -186,23 +180,19 @@ function Reports() {
         Return: returnPercentage,
       };
     }).filter((item): item is { name: string; Return: number } => item !== null);
-  }, [investmentsKey]);
+  }, [stableInvestments]);
 
-  // Create stable references for dependencies
-  const familyMembersKey = familyMembers ? JSON.stringify(familyMembers.map(m => ({ id: m.id, name: m.name }))) : '';
-  const transactionsKey = transactions ? JSON.stringify(transactions.map(t => ({ id: t.id, family_member_id: t.family_member_id, type: t.type, amount_usd: t.amount_usd, amount_syp: t.amount_syp }))) : '';
-  const filtersKey = JSON.stringify(filters);
   const userName = user?.full_name || '';
   
   // Family Spending Comparison Data
   const familySpendingComparison = useMemo(() => {
-    if (!familyMembers || !transactions || filters.family_member_id || !Array.isArray(familyMembers) || !Array.isArray(transactions)) {
+    if (!stableFamilyMembers || !stableTransactions || !stableFilters || (stableFilters && stableFilters.family_member_id) || !Array.isArray(stableFamilyMembers) || !Array.isArray(stableTransactions)) {
       return [];
     }
     
-    const memberSpending = familyMembers.map((member) => {
+    const memberSpending = stableFamilyMembers.map((member) => {
       if (!member || !member.id) return null;
-      const memberTransactions = transactions.filter(
+      const memberTransactions = stableTransactions.filter(
         (t) => t && t.family_member_id === member.id && t.type === 'expense'
       );
       const total = memberTransactions.reduce((sum, t) => {
@@ -215,7 +205,7 @@ function Reports() {
     }).filter((item): item is { name: string; Spending: number } => item !== null);
 
     // Add owner spending
-    const ownerTransactions = transactions.filter(
+    const ownerTransactions = stableTransactions.filter(
       (t) => t && !t.family_member_id && t.type === 'expense'
     );
     const ownerTotal = ownerTransactions.reduce((sum, t) => {
@@ -228,14 +218,11 @@ function Reports() {
     ];
     
     return result.filter((item) => item && item.Spending > 0);
-  }, [familyMembersKey, transactionsKey, filtersKey, userName, t]);
+  }, [stableFamilyMembers, stableTransactions, stableFilters, userName, t]);
 
-  // Create stable reference for monthBuckets
-  const monthBucketsKey = monthBuckets ? JSON.stringify(monthBuckets) : '';
-  
   // Family Spending Trends (multiple lines)
   const familySpendingTrends = useMemo(() => {
-    if (!familyMembers || !transactions || filters.family_member_id || !Array.isArray(familyMembers) || !Array.isArray(transactions) || !Array.isArray(monthBuckets)) {
+    if (!stableFamilyMembers || !stableTransactions || !stableFilters || (stableFilters && stableFilters.family_member_id) || !Array.isArray(stableFamilyMembers) || !Array.isArray(stableTransactions) || !Array.isArray(monthBuckets)) {
       return [];
     }
     
@@ -245,7 +232,7 @@ function Reports() {
       };
       
       // Owner spending
-      const ownerMonthTransactions = transactions.filter(
+      const ownerMonthTransactions = stableTransactions.filter(
         (t) => t && !t.family_member_id && t.type === 'expense' && t.transaction_date && t.transaction_date.startsWith(month)
       );
       const ownerTotal = ownerMonthTransactions.reduce((sum, t) => {
@@ -254,9 +241,9 @@ function Reports() {
       data[userName || t('family.ownerOnly')] = ownerTotal;
       
       // Family member spending
-      familyMembers.forEach((member) => {
+      stableFamilyMembers.forEach((member) => {
         if (member && member.id && member.name) {
-          const memberMonthTransactions = transactions.filter(
+          const memberMonthTransactions = stableTransactions.filter(
             (t) =>
               t &&
               t.family_member_id === member.id &&
@@ -275,7 +262,7 @@ function Reports() {
     });
     
     return result;
-  }, [familyMembersKey, transactionsKey, monthBucketsKey, filtersKey, userName, t]);
+  }, [stableFamilyMembers, stableTransactions, monthBuckets, stableFilters, userName, t]);
 
   return (
     <div className="space-y-6">
@@ -306,7 +293,7 @@ function Reports() {
             options={[
               { value: '', label: t('common.all') },
               { value: 'owner', label: t('family.ownerOnly') },
-              ...(familyMembers?.map((m) => ({ value: m.id, label: m.name })) || []),
+              ...(stableFamilyMembers?.map((m) => ({ value: m.id, label: m.name })) || []),
             ]}
           />
           <div className="md:col-span-3 flex items-end justify-end space-x-2 rtl:space-x-reverse">

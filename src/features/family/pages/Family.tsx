@@ -15,6 +15,7 @@ import { useToast } from '@/shared/hooks/useToast';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import PieChart from '@/shared/components/Charts/PieChart';
 import LineChart from '@/shared/components/Charts/LineChart';
+import { useStableArray } from '@/shared/hooks/useStableValue';
 import {
   PlusIcon,
   PencilIcon,
@@ -80,23 +81,23 @@ function Family() {
   // Use stable reference for exchangeRate to prevent unnecessary recalculations
   const exchangeRate = user?.last_exchange_rate || 1;
   
-  // Create stable keys for dependencies
-  const membersKeyForStats = members ? JSON.stringify(members.map(m => ({ id: m.id, is_active: m.is_active }))) : '';
-  const transactionsKeyForStats = transactions ? JSON.stringify(transactions.map(t => ({ id: t.id, wallet_id: t.wallet_id, family_member_id: t.family_member_id, type: t.type, amount_usd: t.amount_usd, amount_syp: t.amount_syp, transaction_date: t.transaction_date }))) : '';
+  // Use stable array references to prevent unnecessary recalculations
+  const stableMembers = useStableArray(members);
+  const stableTransactions = useStableArray(transactions);
   
   const memberStats = useMemo(() => {
-    if (!Array.isArray(members) || members.length === 0) {
+    if (!Array.isArray(stableMembers) || stableMembers.length === 0) {
       return new Map();
     }
-    if (!Array.isArray(transactions)) {
+    if (!Array.isArray(stableTransactions)) {
       return new Map();
     }
     
     const statsMap = new Map();
-    members.forEach((member) => {
+    stableMembers.forEach((member) => {
       if (member && member.is_active && member.id) {
         try {
-          const stats = calculateMemberSpending(member, transactions, exchangeRate);
+          const stats = calculateMemberSpending(member, stableTransactions, exchangeRate);
           if (stats) {
             statsMap.set(member.id, stats);
           }
@@ -106,7 +107,7 @@ function Family() {
       }
     });
     return statsMap;
-  }, [membersKeyForStats, transactionsKeyForStats, exchangeRate]);
+  }, [stableMembers, stableTransactions, exchangeRate]);
 
   const createMutation = useMutation({
     mutationFn: entities.familyMember.create,
@@ -219,24 +220,19 @@ function Family() {
   ];
 
   // Memoize activeMembers to prevent creating new array on each render
-  // Use stable reference by checking if members array actually changed
-  // Use JSON.stringify to create stable dependency
-  const membersKey = members ? JSON.stringify(members.map(m => ({ id: m.id, is_active: m.is_active }))) : '';
+  // Use stable array reference
   const activeMembers = useMemo(() => {
-    if (!Array.isArray(members) || members.length === 0) {
+    if (!Array.isArray(stableMembers) || stableMembers.length === 0) {
       return [];
     }
-    return members.filter((m) => m && m.is_active);
-  }, [membersKey]);
+    return stableMembers.filter((m) => m && m.is_active);
+  }, [stableMembers]);
 
-  // Create stable reference for memberStats size
-  const memberStatsSize = memberStats?.size || 0;
-  
   // Find top spender
   // Use memberStats directly but with proper null checks
   const topSpender = useMemo<FamilyMember | null>(() => {
     if (!Array.isArray(activeMembers) || activeMembers.length === 0) return null;
-    if (!memberStats || !(memberStats instanceof Map) || memberStatsSize === 0) return null;
+    if (!memberStats || !(memberStats instanceof Map) || memberStats.size === 0) return null;
     
     let maxSpending = 0;
     let topMember: FamilyMember | null = null;
@@ -249,12 +245,12 @@ function Family() {
       }
     });
     return topMember;
-  }, [activeMembers, memberStatsSize]);
+  }, [activeMembers, memberStats]);
 
   // Find most active (most transactions)
   const mostActive = useMemo<FamilyMember | null>(() => {
     if (!Array.isArray(activeMembers) || activeMembers.length === 0) return null;
-    if (!memberStats || !(memberStats instanceof Map) || memberStatsSize === 0) return null;
+    if (!memberStats || !(memberStats instanceof Map) || memberStats.size === 0) return null;
     
     let maxTransactions = 0;
     let activeMember: FamilyMember | null = null;
@@ -267,7 +263,7 @@ function Family() {
       }
     });
     return activeMember;
-  }, [activeMembers, memberStatsSize]);
+  }, [activeMembers, memberStats]);
 
   return (
     <div className="space-y-6">
