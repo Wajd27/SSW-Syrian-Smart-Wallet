@@ -79,11 +79,21 @@ function Family() {
 
   // Calculate spending stats for each member
   const memberStats = useMemo(() => {
-    if (!members || !transactions) return new Map();
+    if (!members || !transactions || !Array.isArray(members) || !Array.isArray(transactions)) {
+      return new Map();
+    }
     const statsMap = new Map();
+    const exchangeRate = user?.last_exchange_rate || 1;
     members.forEach((member) => {
-      if (member.is_active) {
-        statsMap.set(member.id, calculateMemberSpending(member, transactions, user?.last_exchange_rate));
+      if (member && member.is_active && member.id) {
+        try {
+          const stats = calculateMemberSpending(member, transactions, exchangeRate);
+          if (stats) {
+            statsMap.set(member.id, stats);
+          }
+        } catch (error) {
+          console.error('Error calculating member spending:', error);
+        }
       }
     });
     return statsMap;
@@ -199,11 +209,14 @@ function Family() {
     'Other',
   ];
 
-  const activeMembers = members?.filter((m) => m.is_active) || [];
+  // Memoize activeMembers to prevent creating new array on each render
+  const activeMembers = useMemo(() => {
+    return members?.filter((m) => m.is_active) || [];
+  }, [members]);
 
   // Find top spender
   const topSpender = useMemo<FamilyMember | null>(() => {
-    if (!activeMembers.length || !transactions) return null;
+    if (!activeMembers.length || !transactions || !memberStats) return null;
     let maxSpending = 0;
     let topMember: FamilyMember | null = null;
     activeMembers.forEach((member) => {
@@ -218,7 +231,7 @@ function Family() {
 
   // Find most active (most transactions)
   const mostActive = useMemo<FamilyMember | null>(() => {
-    if (!activeMembers.length || !transactions) return null;
+    if (!activeMembers.length || !transactions || !memberStats) return null;
     let maxTransactions = 0;
     let activeMember: FamilyMember | null = null;
     activeMembers.forEach((member) => {

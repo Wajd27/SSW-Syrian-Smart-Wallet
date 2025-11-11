@@ -16,13 +16,18 @@ interface StatsCardProps {
 function StatsCard({ title, value, currency = 'SYP', icon, trend }: StatsCardProps) {
   const { i18n } = useTranslation();
 
+  // If currency is undefined, display as number without currency formatting
+  const displayValue = currency 
+    ? formatCurrency(value, currency, i18n.language)
+    : value.toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US');
+
   return (
     <Card className="hover:shadow-lg transition-all duration-300">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-bold text-gray-900 mt-2">
-            {formatCurrency(value, currency, i18n.language)}
+            {displayValue}
           </p>
           {trend && (
             <p

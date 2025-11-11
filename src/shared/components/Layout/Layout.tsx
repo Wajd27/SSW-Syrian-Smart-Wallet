@@ -15,14 +15,16 @@ function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen flex flex-col">
       <Header onMenuClick={() => setSidebarOpen(true)} />
-      <div className="flex flex-1">
+      <div className="flex flex-1 min-h-0">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <MobileMenu isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 lg:ml-64 rtl:lg:ml-0 rtl:lg:mr-64 p-4 lg:p-8 page-enter">
-          {children}
+        <main className="flex-1 lg:ml-64 rtl:lg:ml-0 rtl:lg:mr-64 p-4 lg:p-8 page-enter min-h-0 flex flex-col">
+          <div className="flex-1">
+            {children}
+          </div>
         </main>
       </div>
-      <footer className="glass-card backdrop-blur-xl bg-white/20 border-t border-white/30 py-3 mt-auto">
+      <footer className="glass-card backdrop-blur-xl bg-white/20 border-t border-white/30 py-3 shrink-0">
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="text-left rtl:text-right">
             <p className="text-sm text-gray-600">

@@ -243,6 +243,7 @@ function Dashboard() {
           <StatsCard
             title={t('dashboard.familyMembers')}
             value={safeFamilyMembers.length}
+            currency={undefined}
             icon={<UserGroupIcon className="w-8 h-8" />}
           />
         </div>
