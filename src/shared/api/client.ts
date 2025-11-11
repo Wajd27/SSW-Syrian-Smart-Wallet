@@ -53,15 +53,42 @@ class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
-
+      
+      // Check if response is OK before parsing JSON
       if (!response.ok) {
-        throw new Error(data.error || data.message || 'An error occurred');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          const text = await response.text();
+          errorMessage = text || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
-      return data;
+      // Parse JSON only if response is OK
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        return data as T;
+      } else {
+        // If not JSON, try to parse as text or return empty array/object based on context
+        const text = await response.text();
+        if (text) {
+          try {
+            return JSON.parse(text) as T;
+          } catch {
+            // If parsing fails, return empty array (most common case for entity lists)
+            return [] as unknown as T;
+          }
+        }
+        return [] as unknown as T;
+      }
     } catch (error) {
       if (error instanceof Error) {
+        console.error('API request error:', error.message, 'URL:', url);
         throw error;
       }
       throw new Error('Network error occurred');
