@@ -34,9 +34,16 @@ function Header({ onMenuClick }: HeaderProps) {
                 />
               </svg>
             </button>
-            <h1 className="ml-2 lg:ml-0 rtl:ml-0 rtl:mr-2 rtl:lg:mr-0 text-xl font-semibold text-gray-800 drop-shadow-sm">
-              {t('common.appName')}
-            </h1>
+            <div className="flex items-center space-x-2 rtl:space-x-reverse ml-2 lg:ml-0 rtl:ml-0 rtl:mr-2 rtl:lg:mr-0">
+              <img
+                src="/AppImages/android/android-launchericon-48-48.png"
+                alt={t('common.appName')}
+                className="h-8 w-8 rounded-lg"
+              />
+              <h1 className="text-xl font-semibold text-gray-800 drop-shadow-sm">
+                {t('common.appName')}
+              </h1>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4 rtl:space-x-reverse">
