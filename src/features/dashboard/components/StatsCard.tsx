@@ -13,11 +13,11 @@ interface StatsCardProps {
   };
 }
 
-function StatsCard({ title, value, currency = 'SYP', icon, trend }: StatsCardProps) {
+function StatsCard({ title, value, currency, icon, trend }: StatsCardProps) {
   const { i18n } = useTranslation();
 
-  // If currency is undefined, display as number without currency formatting
-  const displayValue = currency 
+  // If currency is undefined or null, display as number without currency formatting
+  const displayValue = currency !== undefined && currency !== null
     ? formatCurrency(value, currency, i18n.language)
     : value.toLocaleString(i18n.language === 'ar' ? 'ar-SA' : 'en-US');
 
@@ -29,7 +29,7 @@ function StatsCard({ title, value, currency = 'SYP', icon, trend }: StatsCardPro
           <p className="text-2xl font-bold text-gray-900 mt-2">
             {displayValue}
           </p>
-          {trend && (
+          {trend && currency !== undefined && currency !== null && (
             <p
               className={`text-sm mt-1 font-medium ${
                 trend.isPositive ? 'text-green-600' : 'text-red-600'

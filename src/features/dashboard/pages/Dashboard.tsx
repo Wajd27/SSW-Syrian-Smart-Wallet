@@ -131,31 +131,38 @@ function Dashboard() {
   // Calculate stats with safe defaults
   const totalBalance =
     safeWallets.reduce((sum, wallet) => {
-      const walletTransactions = safeTransactions.filter((t) => t.wallet_id === wallet.id);
+      const walletTransactions = safeTransactions.filter((t) => t && t.wallet_id === wallet.id);
+      const initialBalance = wallet.initial_balance ? Number(wallet.initial_balance) : 0;
       const balance = walletTransactions.reduce((balanceSum, t) => {
+        if (!t) return balanceSum;
+        const amount = t.primary_currency === 'USD' 
+          ? (Number(t.amount_usd) || 0)
+          : (Number(t.amount_syp) || 0);
         if (t.type === 'income') {
-          return balanceSum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
+          return balanceSum + amount;
         } else {
-          return balanceSum - (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
+          return balanceSum - amount;
         }
-      }, wallet.initial_balance || 0);
-      return sum + balance;
+      }, initialBalance);
+      return sum + (isNaN(balance) ? 0 : balance);
     }, 0);
 
   const totalIncome =
     safeTransactions.reduce((sum, t) => {
-      if (t.type === 'income') {
-        return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
-      }
-      return sum;
+      if (!t || t.type !== 'income') return sum;
+      const amount = t.primary_currency === 'USD' 
+        ? (Number(t.amount_usd) || 0)
+        : (Number(t.amount_syp) || 0);
+      return sum + amount;
     }, 0);
 
   const totalExpenses =
     safeTransactions.reduce((sum, t) => {
-      if (t.type === 'expense') {
-        return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
-      }
-      return sum;
+      if (!t || t.type !== 'expense') return sum;
+      const amount = t.primary_currency === 'USD' 
+        ? (Number(t.amount_usd) || 0)
+        : (Number(t.amount_syp) || 0);
+      return sum + amount;
     }, 0);
 
   // Calculate monthly trends (simplified - compare current month vs previous month)
@@ -166,23 +173,43 @@ function Dashboard() {
 
   const currentMonthIncome =
     safeTransactions
-      .filter((t) => t.transaction_date?.startsWith(currentMonth) && t.type === 'income')
-      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
+      .filter((t) => t && t.transaction_date && t.transaction_date.startsWith(currentMonth) && t.type === 'income')
+      .reduce((sum, t) => {
+        const amount = t.primary_currency === 'USD' 
+          ? (Number(t.amount_usd) || 0)
+          : (Number(t.amount_syp) || 0);
+        return sum + amount;
+      }, 0);
 
   const lastMonthIncome =
     safeTransactions
-      .filter((t) => t.transaction_date?.startsWith(lastMonthStr) && t.type === 'income')
-      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
+      .filter((t) => t && t.transaction_date && t.transaction_date.startsWith(lastMonthStr) && t.type === 'income')
+      .reduce((sum, t) => {
+        const amount = t.primary_currency === 'USD' 
+          ? (Number(t.amount_usd) || 0)
+          : (Number(t.amount_syp) || 0);
+        return sum + amount;
+      }, 0);
 
   const currentMonthExpenses =
     safeTransactions
-      .filter((t) => t.transaction_date?.startsWith(currentMonth) && t.type === 'expense')
-      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
+      .filter((t) => t && t.transaction_date && t.transaction_date.startsWith(currentMonth) && t.type === 'expense')
+      .reduce((sum, t) => {
+        const amount = t.primary_currency === 'USD' 
+          ? (Number(t.amount_usd) || 0)
+          : (Number(t.amount_syp) || 0);
+        return sum + amount;
+      }, 0);
 
   const lastMonthExpenses =
     safeTransactions
-      .filter((t) => t.transaction_date?.startsWith(lastMonthStr) && t.type === 'expense')
-      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
+      .filter((t) => t && t.transaction_date && t.transaction_date.startsWith(lastMonthStr) && t.type === 'expense')
+      .reduce((sum, t) => {
+        const amount = t.primary_currency === 'USD' 
+          ? (Number(t.amount_usd) || 0)
+          : (Number(t.amount_syp) || 0);
+        return sum + amount;
+      }, 0);
 
   return (
     <PullToRefresh
