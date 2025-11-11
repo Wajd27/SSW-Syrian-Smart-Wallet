@@ -81,6 +81,9 @@ function Reports() {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
 
+  // Create stable key for transactions
+  const transactionsKeyForBuckets = transactions ? JSON.stringify(transactions.map(t => t?.transaction_date)) : '';
+  
   // Process data for charts
   const monthBuckets = useMemo(() => {
     if (!transactions || !Array.isArray(transactions)) {
@@ -102,8 +105,12 @@ function Reports() {
       date.setMonth(date.getMonth() - (5 - i));
       return date.toISOString().slice(0, 7);
     });
-  }, [transactions]);
+  }, [transactionsKeyForBuckets]);
 
+  // Create stable keys
+  const monthBucketsKeyForIncomeExpense = monthBuckets ? JSON.stringify(monthBuckets) : '';
+  const transactionsKeyForIncomeExpense = transactions ? JSON.stringify(transactions.map(t => ({ transaction_date: t?.transaction_date, type: t?.type, amount_usd: t?.amount_usd, amount_syp: t?.amount_syp, primary_currency: t?.primary_currency }))) : '';
+  
   const incomeVsExpenseData = useMemo(() => {
     if (!monthBuckets || !Array.isArray(monthBuckets) || !transactions || !Array.isArray(transactions)) {
       return [];
@@ -123,8 +130,10 @@ function Reports() {
         Expenses: expenses,
       };
     });
-  }, [monthBuckets, transactions]);
+  }, [monthBucketsKeyForIncomeExpense, transactionsKeyForIncomeExpense]);
 
+  const transactionsKeyForCategory = transactions ? JSON.stringify(transactions.map(t => ({ type: t?.type, category: t?.category, amount_usd: t?.amount_usd, amount_syp: t?.amount_syp, primary_currency: t?.primary_currency }))) : '';
+  
   const categoryChartData = useMemo(() => {
     if (!transactions || !Array.isArray(transactions)) {
       return [];
@@ -140,8 +149,10 @@ function Reports() {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 6);
-  }, [transactions]);
+  }, [transactionsKeyForCategory]);
 
+  const transactionsKeyForTotals = transactions ? JSON.stringify(transactions.map(t => ({ type: t?.type, amount_usd: t?.amount_usd, amount_syp: t?.amount_syp, primary_currency: t?.primary_currency }))) : '';
+  
   const totalIncome = useMemo(() => {
     if (!transactions || !Array.isArray(transactions)) return 0;
     return transactions.reduce((sum, t) => {
@@ -150,7 +161,7 @@ function Reports() {
       }
       return sum;
     }, 0);
-  }, [transactions]);
+  }, [transactionsKeyForTotals]);
 
   const totalExpenses = useMemo(() => {
     if (!transactions || !Array.isArray(transactions)) return 0;
@@ -160,8 +171,10 @@ function Reports() {
       }
       return sum;
     }, 0);
-  }, [transactions]);
+  }, [transactionsKeyForTotals]);
 
+  const investmentsKey = investments ? JSON.stringify(investments.map(inv => ({ name: inv?.name, initial_amount: inv?.initial_amount, current_value: inv?.current_value }))) : '';
+  
   const investmentPerformance = useMemo(() => {
     if (!investments || !Array.isArray(investments)) return [];
     return investments.map((inv) => {
@@ -173,8 +186,14 @@ function Reports() {
         Return: returnPercentage,
       };
     }).filter((item): item is { name: string; Return: number } => item !== null);
-  }, [investments]);
+  }, [investmentsKey]);
 
+  // Create stable references for dependencies
+  const familyMembersKey = familyMembers ? JSON.stringify(familyMembers.map(m => ({ id: m.id, name: m.name }))) : '';
+  const transactionsKey = transactions ? JSON.stringify(transactions.map(t => ({ id: t.id, family_member_id: t.family_member_id, type: t.type, amount_usd: t.amount_usd, amount_syp: t.amount_syp }))) : '';
+  const filtersKey = JSON.stringify(filters);
+  const userName = user?.full_name || '';
+  
   // Family Spending Comparison Data
   const familySpendingComparison = useMemo(() => {
     if (!familyMembers || !transactions || filters.family_member_id || !Array.isArray(familyMembers) || !Array.isArray(transactions)) {
@@ -204,13 +223,16 @@ function Reports() {
     }, 0);
     
     const result = [
-      { name: user?.full_name || t('family.ownerOnly'), Spending: ownerTotal },
+      { name: userName || t('family.ownerOnly'), Spending: ownerTotal },
       ...memberSpending,
     ];
     
     return result.filter((item) => item && item.Spending > 0);
-  }, [familyMembers, transactions, filters.family_member_id, user?.full_name, t]);
+  }, [familyMembersKey, transactionsKey, filtersKey, userName, t]);
 
+  // Create stable reference for monthBuckets
+  const monthBucketsKey = monthBuckets ? JSON.stringify(monthBuckets) : '';
+  
   // Family Spending Trends (multiple lines)
   const familySpendingTrends = useMemo(() => {
     if (!familyMembers || !transactions || filters.family_member_id || !Array.isArray(familyMembers) || !Array.isArray(transactions) || !Array.isArray(monthBuckets)) {
@@ -229,7 +251,7 @@ function Reports() {
       const ownerTotal = ownerMonthTransactions.reduce((sum, t) => {
         return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
       }, 0);
-      data[user?.full_name || t('family.ownerOnly')] = ownerTotal;
+      data[userName || t('family.ownerOnly')] = ownerTotal;
       
       // Family member spending
       familyMembers.forEach((member) => {
@@ -253,7 +275,7 @@ function Reports() {
     });
     
     return result;
-  }, [familyMembers, transactions, monthBuckets, filters.family_member_id, user?.full_name, t]);
+  }, [familyMembersKey, transactionsKey, monthBucketsKey, filtersKey, userName, t]);
 
   return (
     <div className="space-y-6">

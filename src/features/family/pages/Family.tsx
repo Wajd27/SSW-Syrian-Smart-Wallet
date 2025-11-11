@@ -80,6 +80,10 @@ function Family() {
   // Use stable reference for exchangeRate to prevent unnecessary recalculations
   const exchangeRate = user?.last_exchange_rate || 1;
   
+  // Create stable keys for dependencies
+  const membersKeyForStats = members ? JSON.stringify(members.map(m => ({ id: m.id, is_active: m.is_active }))) : '';
+  const transactionsKeyForStats = transactions ? JSON.stringify(transactions.map(t => ({ id: t.id, wallet_id: t.wallet_id, family_member_id: t.family_member_id, type: t.type, amount_usd: t.amount_usd, amount_syp: t.amount_syp, transaction_date: t.transaction_date }))) : '';
+  
   const memberStats = useMemo(() => {
     if (!Array.isArray(members) || members.length === 0) {
       return new Map();
@@ -102,7 +106,7 @@ function Family() {
       }
     });
     return statsMap;
-  }, [members, transactions, exchangeRate]);
+  }, [membersKeyForStats, transactionsKeyForStats, exchangeRate]);
 
   const createMutation = useMutation({
     mutationFn: entities.familyMember.create,
@@ -216,19 +220,23 @@ function Family() {
 
   // Memoize activeMembers to prevent creating new array on each render
   // Use stable reference by checking if members array actually changed
+  // Use JSON.stringify to create stable dependency
+  const membersKey = members ? JSON.stringify(members.map(m => ({ id: m.id, is_active: m.is_active }))) : '';
   const activeMembers = useMemo(() => {
     if (!Array.isArray(members) || members.length === 0) {
       return [];
     }
     return members.filter((m) => m && m.is_active);
-  }, [members]);
+  }, [membersKey]);
 
+  // Create stable reference for memberStats size
+  const memberStatsSize = memberStats?.size || 0;
+  
   // Find top spender
   // Use memberStats directly but with proper null checks
   const topSpender = useMemo<FamilyMember | null>(() => {
     if (!Array.isArray(activeMembers) || activeMembers.length === 0) return null;
-    if (!memberStats || !(memberStats instanceof Map) || memberStats.size === 0) return null;
-    if (!Array.isArray(transactions)) return null;
+    if (!memberStats || !(memberStats instanceof Map) || memberStatsSize === 0) return null;
     
     let maxSpending = 0;
     let topMember: FamilyMember | null = null;
@@ -241,13 +249,12 @@ function Family() {
       }
     });
     return topMember;
-  }, [activeMembers, memberStats, transactions]);
+  }, [activeMembers, memberStatsSize]);
 
   // Find most active (most transactions)
   const mostActive = useMemo<FamilyMember | null>(() => {
     if (!Array.isArray(activeMembers) || activeMembers.length === 0) return null;
-    if (!memberStats || !(memberStats instanceof Map) || memberStats.size === 0) return null;
-    if (!Array.isArray(transactions)) return null;
+    if (!memberStats || !(memberStats instanceof Map) || memberStatsSize === 0) return null;
     
     let maxTransactions = 0;
     let activeMember: FamilyMember | null = null;
@@ -260,7 +267,7 @@ function Family() {
       }
     });
     return activeMember;
-  }, [activeMembers, memberStats, transactions]);
+  }, [activeMembers, memberStatsSize]);
 
   return (
     <div className="space-y-6">
