@@ -43,6 +43,7 @@ function Debts() {
       return entities.debt.filter({ wallet_owner: user.email });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const createMutation = useMutation({

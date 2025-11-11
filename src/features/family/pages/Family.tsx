@@ -57,6 +57,7 @@ function Family() {
       return entities.familyMember.filter({ added_by: user.email });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   // Fetch all transactions for analytics
@@ -73,6 +74,7 @@ function Family() {
       return allTransactions.flat();
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   // Calculate spending stats for each member

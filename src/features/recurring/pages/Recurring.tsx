@@ -50,6 +50,7 @@ function Recurring() {
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: familyMembers } = useQuery({
@@ -59,6 +60,7 @@ function Recurring() {
       return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: recurringTransactions, isLoading } = useQuery({
@@ -68,6 +70,7 @@ function Recurring() {
       return entities.recurringTransaction.filter({ wallet_owner: user.email });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const createMutation = useMutation({

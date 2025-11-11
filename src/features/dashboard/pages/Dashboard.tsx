@@ -38,7 +38,7 @@ function Dashboard() {
     },
     enabled: !!user?.email,
     retry: 1,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
   const { data: transactions, isLoading: transactionsLoading, error: transactionsError } = useQuery({
@@ -67,9 +67,9 @@ function Dashboard() {
         return [];
       }
     },
-    enabled: !!user?.email && !!wallets && wallets.length > 0,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
     retry: 1,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
   const { data: familyMembers, isLoading: familyLoading, error: familyError } = useQuery({
@@ -85,7 +85,7 @@ function Dashboard() {
     },
     enabled: !!user?.email,
     retry: 1,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
   // Log errors but don't block rendering - use empty arrays as fallback

@@ -80,6 +80,7 @@ function AIAssistant() {
       return response.recommendations;
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: existingRecommendations } = useQuery({

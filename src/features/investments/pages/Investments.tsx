@@ -50,6 +50,7 @@ function Investments() {
       return allGoals.flat();
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: investments, isLoading } = useQuery({
@@ -59,6 +60,7 @@ function Investments() {
       return entities.investment.filter({ wallet_owner: user.email });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const createMutation = useMutation({

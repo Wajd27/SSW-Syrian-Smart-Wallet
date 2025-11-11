@@ -41,13 +41,14 @@ function Budgets() {
     template: '50-30-20',
   });
 
-  const { data: wallets } = useQuery({
+  const { data: wallets, isLoading: walletsLoading } = useQuery({
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: familyMembers } = useQuery({
@@ -57,32 +58,35 @@ function Budgets() {
       return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: budgets, isLoading } = useQuery({
     queryKey: ['budgets', user?.email],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allBudgets = await Promise.all(
         walletIds.map((id) => entities.budget.filter({ wallet_id: id }))
       );
       return allBudgets.flat();
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const { data: transactions } = useQuery({
     queryKey: ['transactions', 'budgets', user?.email],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allTransactions = await Promise.all(
         walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
       );
       return allTransactions.flat();
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const createMutation = useMutation({

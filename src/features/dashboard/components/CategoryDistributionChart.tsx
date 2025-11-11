@@ -22,6 +22,7 @@ function CategoryDistributionChart() {
       return allTransactions.flat();
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   if (isLoading) {

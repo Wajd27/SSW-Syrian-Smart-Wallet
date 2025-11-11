@@ -22,6 +22,7 @@ function SpendingTrendsChart() {
       return allTransactions.flat();
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   if (isLoading) {

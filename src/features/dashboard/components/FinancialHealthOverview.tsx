@@ -18,19 +18,20 @@ function FinancialHealthOverview() {
   const { t, i18n } = useTranslation();
   const { user, selectedFamilyMember } = useAuth();
 
-  const { data: wallets } = useQuery({
+  const { data: wallets, isLoading: walletsLoading } = useQuery({
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: transactions } = useQuery({
     queryKey: ['transactions', 'health', user?.email, selectedFamilyMember],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allTransactions = await Promise.all(
         walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
@@ -46,33 +47,36 @@ function FinancialHealthOverview() {
       
       return filtered;
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const { data: budgets } = useQuery({
     queryKey: ['budgets', 'health', user?.email],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allBudgets = await Promise.all(
         walletIds.map((id) => entities.budget.filter({ wallet_id: id }))
       );
       return allBudgets.flat();
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const { data: savingsGoals } = useQuery({
     queryKey: ['savings-goals', 'health', user?.email],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allGoals = await Promise.all(
         walletIds.map((id) => entities.savingsGoal.filter({ wallet_id: id }))
       );
       return allGoals.flat();
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const { data: investments } = useQuery({
@@ -82,6 +86,7 @@ function FinancialHealthOverview() {
       return entities.investment.filter({ wallet_owner: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: debts } = useQuery({
@@ -91,6 +96,7 @@ function FinancialHealthOverview() {
       return entities.debt.filter({ wallet_owner: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: recurringTransactions } = useQuery({
@@ -100,6 +106,7 @@ function FinancialHealthOverview() {
       return entities.recurringTransaction.filter({ wallet_owner: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   if (

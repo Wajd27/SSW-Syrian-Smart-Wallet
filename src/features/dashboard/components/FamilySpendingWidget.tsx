@@ -21,6 +21,7 @@ function FamilySpendingWidget() {
       return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
@@ -36,6 +37,7 @@ function FamilySpendingWidget() {
       return allTransactions.flat();
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const topSpenders = useMemo(() => {

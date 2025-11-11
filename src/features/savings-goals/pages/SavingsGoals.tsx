@@ -36,19 +36,20 @@ function SavingsGoals() {
     category: '',
   });
 
-  const { data: wallets } = useQuery({
+  const { data: wallets, isLoading: walletsLoading } = useQuery({
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: goals, isLoading } = useQuery({
     queryKey: ['savings-goals', user?.email],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allGoals = await Promise.all(
         walletIds.map((id) => entities.savingsGoal.filter({ wallet_id: id }))
@@ -62,7 +63,8 @@ function SavingsGoals() {
       });
       return Array.from(goalsMap.values());
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const createMutation = useMutation({

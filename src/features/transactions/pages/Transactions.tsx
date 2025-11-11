@@ -58,13 +58,14 @@ function Transactions() {
     receipt: null as File | null,
   });
 
-  const { data: wallets } = useQuery({
+  const { data: wallets, isLoading: walletsLoading } = useQuery({
     queryKey: ['wallets', user?.email],
     queryFn: async () => {
       if (!user?.email) return [];
       return entities.wallet.filter({ owner_email: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: familyMembers } = useQuery({
@@ -74,25 +75,27 @@ function Transactions() {
       return entities.familyMember.filter({ added_by: user.email, is_active: true });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const { data: budgets } = useQuery({
     queryKey: ['budgets', 'transactions', user?.email],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allBudgets = await Promise.all(
         walletIds.map((id) => entities.budget.filter({ wallet_id: id }))
       );
       return allBudgets.flat();
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactions', user?.email, filters],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = filters.wallet_id
         ? [filters.wallet_id]
         : wallets.map((w) => w.id);
@@ -125,7 +128,8 @@ function Transactions() {
         new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()
       );
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
+    refetchOnMount: true,
   });
 
   const createMutation = useMutation({

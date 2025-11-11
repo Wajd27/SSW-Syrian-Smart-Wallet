@@ -36,6 +36,7 @@ function Wallets() {
       return entities.wallet.filter({ owner_email: user.email });
     },
     enabled: !!user?.email,
+    refetchOnMount: true,
   });
 
   const createMutation = useMutation({

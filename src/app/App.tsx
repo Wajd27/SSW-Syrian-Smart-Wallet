@@ -16,6 +16,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
+      refetchOnMount: true, // Always refetch when component mounts
+      staleTime: 0, // Consider data stale immediately to ensure fresh data
+      gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes (formerly cacheTime)
       retry: 1,
     },
   },
