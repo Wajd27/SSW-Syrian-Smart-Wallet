@@ -10,6 +10,7 @@ import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SavingsGoal } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -144,21 +145,26 @@ function SavingsGoals() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('savingsGoals.title')}</h1>
+    <PullToRefresh queryKeys={['savings-goals', 'wallets']}>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('savingsGoals.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('savingsGoals.addGoal')}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {goals?.map((goal) => {
-          const wallet = wallets?.find((w) => w.id === goal.wallet_id);
-          const progress = (goal.current_amount / goal.target_amount) * 100;
-          return (
-            <Card key={goal.id} className="hover:shadow-lg transition-shadow">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {goals?.map((goal, index) => {
+              const wallet = wallets?.find((w) => w.id === goal.wallet_id);
+              const progress = (goal.current_amount / goal.target_amount) * 100;
+              return (
+                <Card
+                  key={goal.id}
+                  className="hover:shadow-lg transition-shadow animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
@@ -320,7 +326,8 @@ function SavingsGoals() {
           </div>
         </form>
       </Modal>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

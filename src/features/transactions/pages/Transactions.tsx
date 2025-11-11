@@ -6,6 +6,7 @@ import { entities } from '@/shared/api/entities';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { filesApi } from '@/shared/api/files';
 import Card from '@/shared/components/Card/Card';
+import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import Button from '@/shared/components/Button/Button';
 import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
@@ -226,9 +227,18 @@ function Transactions() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('transactions.title')}</h1>
+    <PullToRefresh
+      queryKeys={['transactions', 'wallets']}
+      onRefresh={async () => {
+        if (user?.email && wallets) {
+          const walletIds = wallets.map((w) => w.id);
+          await Promise.all(walletIds.map((id) => entities.transaction.filter({ wallet_id: id })));
+        }
+      }}
+    >
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('transactions.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('transactions.addTransaction')}
@@ -278,14 +288,18 @@ function Transactions() {
 
       {/* Transactions List */}
       <div className="space-y-4">
-        {transactions?.map((transaction) => {
+        {transactions?.map((transaction, index) => {
           const wallet = wallets?.find((w) => w.id === transaction.wallet_id);
           const amount =
             transaction.primary_currency === 'USD'
               ? transaction.amount_usd
               : transaction.amount_syp;
           return (
-            <Card key={transaction.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={transaction.id}
+              className="hover:shadow-md transition-shadow animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -503,7 +517,8 @@ function Transactions() {
           </div>
         </form>
       </Modal>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

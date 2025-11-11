@@ -9,6 +9,7 @@ import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Budget } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -165,9 +166,10 @@ function Budgets() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('budgets.title')}</h1>
+    <PullToRefresh queryKeys={['budgets', 'transactions', 'wallets']}>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('budgets.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('budgets.addBudget')}
@@ -175,11 +177,15 @@ function Budgets() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {budgets?.map((budget) => {
+        {budgets?.map((budget, index) => {
           const wallet = wallets?.find((w) => w.id === budget.wallet_id);
           const progress = getBudgetProgress(budget);
           return (
-            <Card key={budget.id} className="hover:shadow-lg transition-shadow">
+            <Card
+              key={budget.id}
+              className="hover:shadow-lg transition-shadow animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.05}s` }}
+            >
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">{budget.category}</h3>
                 <p className="text-sm text-gray-500">{wallet?.name}</p>
@@ -330,7 +336,8 @@ function Budgets() {
           </div>
         </form>
       </Modal>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

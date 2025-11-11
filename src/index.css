@@ -9,6 +9,9 @@
 
   body {
     @apply h-full m-0 font-sans antialiased;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
   }
 
   #root {
@@ -32,28 +35,108 @@
 }
 
 @layer components {
+  /* Glassmorphism Utilities */
+  .glass {
+    @apply backdrop-blur-xl bg-white/10 border border-white/20;
+  }
+
+  .glass-card {
+    @apply backdrop-blur-xl bg-white/20 border border-white/30 rounded-xl shadow-lg;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  }
+
+  .glass-button {
+    @apply backdrop-blur-md bg-white/20 border border-white/30 rounded-lg;
+    transition: all 0.3s ease;
+  }
+
+  .glass-button:hover {
+    @apply bg-white/30 border-white/40;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .glass-input {
+    @apply backdrop-blur-md bg-white/10 border border-white/30 rounded-lg;
+    transition: all 0.3s ease;
+  }
+
+  .glass-input:focus {
+    @apply bg-white/20 border-white/50;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Button Styles */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
 
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply bg-primary-600/90 backdrop-blur-sm text-white hover:bg-primary-700/90 focus:ring-primary-500;
+    box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px 0 rgba(37, 99, 235, 0.5);
+  }
+
+  .btn-primary:active {
+    transform: translateY(0);
   }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+    @apply glass-button text-gray-900 hover:text-gray-950;
   }
 
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    @apply bg-red-600/90 backdrop-blur-sm text-white hover:bg-red-700/90 focus:ring-red-500;
+    box-shadow: 0 4px 14px 0 rgba(220, 38, 38, 0.39);
   }
 
+  .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px 0 rgba(220, 38, 38, 0.5);
+  }
+
+  .btn-outline {
+    @apply glass-button text-gray-700 hover:text-gray-900;
+  }
+
+  /* Input Styles */
   .input {
-    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply glass-input w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/50;
   }
 
+  /* Card Styles */
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    @apply glass-card p-6 transition-all duration-300;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.5);
+  }
+
+  /* Page Transition */
+  .page-enter {
+    animation: fadeInUp 0.4s ease-out;
+  }
+
+  /* Shake Animation for Errors */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+
+  /* Smooth Scroll */
+  html {
+    scroll-behavior: smooth;
   }
 }
 

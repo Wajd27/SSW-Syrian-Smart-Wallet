@@ -45,12 +45,12 @@ function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 z-50 w-64 bg-white shadow-lg lg:hidden">
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">{t('common.appName')}</h2>
+    <div className="fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 z-50 w-64 glass-card backdrop-blur-xl bg-white/20 shadow-2xl lg:hidden animate-slide-up">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-white/30">
+        <h2 className="text-lg font-semibold text-white drop-shadow-lg">{t('common.appName')}</h2>
         <button
           onClick={onClose}
-          className="p-2 rounded-md text-gray-400 hover:text-gray-500"
+          className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
         >
           <XMarkIcon className="w-6 h-6" />
         </button>
@@ -64,10 +64,10 @@ function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               to={item.path}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
                   isActive
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-white/30 text-white shadow-lg backdrop-blur-md'
+                    : 'text-white/80 hover:bg-white/20 hover:text-white'
                 }`
               }
             >
@@ -77,13 +77,13 @@ function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           );
         })}
       </nav>
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-white/30">
         <button
           onClick={() => {
             logout();
             onClose();
           }}
-          className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50"
+          className="flex items-center w-full px-4 py-2 text-sm font-medium text-white/90 rounded-lg hover:bg-red-500/30 hover:text-white transition-all duration-300"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 ml-3 rtl:ml-0 rtl:mr-3" />
           {t('auth.logout')}

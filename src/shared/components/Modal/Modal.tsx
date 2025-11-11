@@ -32,7 +32,7 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -47,21 +47,23 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`w-full ${sizeClasses[size]} transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all`}
+                className={`w-full ${sizeClasses[size]} transform overflow-hidden rounded-2xl glass-card backdrop-blur-xl bg-white/20 border border-white/30 p-6 text-left align-middle shadow-2xl transition-all`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-white drop-shadow-md">
                     {title}
                   </Dialog.Title>
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-500"
+                    className="text-white/80 hover:text-white hover:bg-white/20 rounded-md p-1 transition-all duration-300"
                     onClick={onClose}
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
                 </div>
-                {children}
+                <div className="text-white/90">
+                  {children}
+                </div>
               </Dialog.Panel>
             </Transition.Child>
           </div>

@@ -26,22 +26,23 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            {t('auth.login')}
-          </h2>
-        </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 animate-fade-in">
+      <div className="max-w-md w-full space-y-8 animate-scale-in">
+        <div className="glass-card backdrop-blur-xl bg-white/20 border border-white/30 rounded-2xl p-8 shadow-2xl">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-white drop-shadow-lg">
+              {t('auth.login')}
+            </h2>
+          </div>
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="glass backdrop-blur-md bg-red-500/20 border border-red-400/50 text-red-100 px-4 py-3 rounded-lg animate-shake">
               {error}
             </div>
           )}
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
                 {t('auth.email')}
               </label>
               <input
@@ -49,13 +50,13 @@ function Login() {
                 name="email"
                 type="email"
                 required
-                className="input mt-1"
+                className="input mt-1 text-white placeholder:text-white/50"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
                 {t('auth.password')}
               </label>
               <input
@@ -63,7 +64,7 @@ function Login() {
                 name="password"
                 type="password"
                 required
-                className="input mt-1"
+                className="input mt-1 text-white placeholder:text-white/50"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -81,11 +82,12 @@ function Login() {
           </div>
 
           <div className="text-center">
-            <Link to="/register" className="text-sm text-primary-600 hover:text-primary-500">
+            <Link to="/register" className="text-sm text-white/80 hover:text-white transition-colors duration-300">
               {t('auth.dontHaveAccount')}
             </Link>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

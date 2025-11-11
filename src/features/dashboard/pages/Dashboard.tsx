@@ -9,6 +9,7 @@ import SpendingTrendsChart from '../components/SpendingTrendsChart';
 import CategoryDistributionChart from '../components/CategoryDistributionChart';
 import RecurringProcessor from '../components/RecurringProcessor';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import {
   WalletIcon,
   ArrowUpIcon,
@@ -116,43 +117,62 @@ function Dashboard() {
     0;
 
   return (
-    <div className="space-y-6">
-      <RecurringProcessor />
-      <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+    <PullToRefresh
+      queryKeys={['wallets', 'transactions', 'family-members', 'dashboard']}
+      onRefresh={async () => {
+        // Refresh all dashboard data
+        await Promise.all([
+          entities.wallet.filter({ owner_email: user!.email, is_active: true }),
+          entities.transaction.filter({}),
+          entities.familyMember.filter({ added_by: user!.email, is_active: true }),
+        ]);
+      }}
+    >
+      <div className="space-y-6 animate-fade-in">
+        <RecurringProcessor />
+        <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('dashboard.title')}</h1>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title={t('dashboard.totalBalance')}
-          value={totalBalance}
-          currency={user?.default_currency || 'SYP'}
-          icon={<WalletIcon className="w-8 h-8" />}
-        />
-        <StatsCard
-          title={t('dashboard.income')}
-          value={totalIncome}
-          currency={user?.default_currency || 'SYP'}
-          icon={<ArrowUpIcon className="w-8 h-8" />}
-          trend={{
-            value: currentMonthIncome - lastMonthIncome,
-            isPositive: currentMonthIncome >= lastMonthIncome,
-          }}
-        />
-        <StatsCard
-          title={t('dashboard.expenses')}
-          value={totalExpenses}
-          currency={user?.default_currency || 'SYP'}
-          icon={<ArrowDownIcon className="w-8 h-8" />}
-          trend={{
-            value: currentMonthExpenses - lastMonthExpenses,
-            isPositive: currentMonthExpenses <= lastMonthExpenses,
-          }}
-        />
-        <StatsCard
-          title={t('dashboard.familyMembers')}
-          value={familyMembers?.length || 0}
-          icon={<UserGroupIcon className="w-8 h-8" />}
-        />
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <StatsCard
+            title={t('dashboard.totalBalance')}
+            value={totalBalance}
+            currency={user?.default_currency || 'SYP'}
+            icon={<WalletIcon className="w-8 h-8" />}
+          />
+        </div>
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <StatsCard
+            title={t('dashboard.income')}
+            value={totalIncome}
+            currency={user?.default_currency || 'SYP'}
+            icon={<ArrowUpIcon className="w-8 h-8" />}
+            trend={{
+              value: currentMonthIncome - lastMonthIncome,
+              isPositive: currentMonthIncome >= lastMonthIncome,
+            }}
+          />
+        </div>
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <StatsCard
+            title={t('dashboard.expenses')}
+            value={totalExpenses}
+            currency={user?.default_currency || 'SYP'}
+            icon={<ArrowDownIcon className="w-8 h-8" />}
+            trend={{
+              value: currentMonthExpenses - lastMonthExpenses,
+              isPositive: currentMonthExpenses <= lastMonthExpenses,
+            }}
+          />
+        </div>
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <StatsCard
+            title={t('dashboard.familyMembers')}
+            value={familyMembers?.length || 0}
+            icon={<UserGroupIcon className="w-8 h-8" />}
+          />
+        </div>
       </div>
 
       {/* Exchange Rate and Quick Actions */}
@@ -166,7 +186,8 @@ function Dashboard() {
         <SpendingTrendsChart />
         <CategoryDistributionChart />
       </div>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

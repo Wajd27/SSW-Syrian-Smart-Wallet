@@ -11,21 +11,21 @@ function DatePicker({ label, error, helperText, className, ...props }: DatePicke
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={props.id} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={props.id} className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
           {label}
         </label>
       )}
       <input
         type="date"
         className={clsx(
-          'input',
-          error && 'border-red-500 focus:ring-red-500',
+          'input text-white',
+          error && 'border-red-400/50 focus:ring-red-400/50',
           className
         )}
         {...props}
       />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
+      {error && <p className="mt-1 text-sm text-red-300 drop-shadow-sm">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-white/70 drop-shadow-sm">{helperText}</p>}
     </div>
   );
 }

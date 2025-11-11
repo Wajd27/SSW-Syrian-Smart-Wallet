@@ -9,6 +9,7 @@ import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
+import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { Wallet as WalletType } from '@/shared/types/entities';
 
@@ -122,9 +123,10 @@ function Wallets() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('wallets.title')}</h1>
+    <PullToRefresh queryKeys={['wallets']}>
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('wallets.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('wallets.addWallet')}
@@ -132,8 +134,12 @@ function Wallets() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {wallets?.map((wallet) => (
-          <Card key={wallet.id} className="hover:shadow-lg transition-shadow">
+        {wallets?.map((wallet, index) => (
+          <Card
+            key={wallet.id}
+            className="hover:shadow-lg transition-shadow animate-fade-in-up"
+            style={{ animationDelay: `${index * 0.05}s` }}
+          >
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">{wallet.name}</h3>
@@ -255,7 +261,8 @@ function Wallets() {
           </div>
         </form>
       </Modal>
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }
 

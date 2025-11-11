@@ -45,7 +45,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex lg:flex-shrink-0">
-        <div className="flex flex-col w-64 fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 pt-16 bg-white border-r border-gray-200 rtl:border-r-0 rtl:border-l">
+        <div className="flex flex-col w-64 fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 pt-16 glass-card backdrop-blur-xl bg-white/20 border-r border-white/30 rtl:border-r-0 rtl:border-l">
           <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -54,23 +54,23 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
                   key={item.path}
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
                       isActive
-                        ? 'bg-primary-50 text-primary-700'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? 'bg-white/30 text-white shadow-lg backdrop-blur-md'
+                        : 'text-white/80 hover:bg-white/20 hover:text-white'
                     }`
                   }
                 >
-                  <Icon className="w-5 h-5 ml-3 rtl:ml-0 rtl:mr-3" />
+                  <Icon className="w-5 h-5 ml-3 rtl:ml-0 rtl:mr-3 transition-transform duration-300 group-hover:scale-110" />
                   {item.label}
                 </NavLink>
               );
             })}
           </nav>
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-white/30">
             <button
               onClick={logout}
-              className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50"
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-white/90 rounded-lg hover:bg-red-500/30 hover:text-white transition-all duration-300"
             >
               <ArrowRightOnRectangleIcon className="w-5 h-5 ml-3 rtl:ml-0 rtl:mr-3" />
               {t('auth.logout')}
@@ -82,7 +82,7 @@ function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile Sidebar Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden transition-opacity duration-300"
           onClick={onClose}
         />
       )}
