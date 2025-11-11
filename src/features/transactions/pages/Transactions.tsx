@@ -65,7 +65,7 @@ function Transactions() {
     },
     enabled: !!user?.email,
     refetchOnMount: true,
-    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
+    refetchInterval: false, // Disable auto-refresh - use manual refresh button instead
   });
 
   const { data: familyMembers } = useQuery({

@@ -15,10 +15,10 @@ import { initializeAudioOnInteraction } from '@/shared/utils/sounds';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: true, // Refetch when user returns to the app/tab
-      refetchOnMount: true, // Always refetch when component mounts
-      staleTime: 30 * 1000, // Consider data stale after 30 seconds
-      gcTime: 5 * 60 * 1000, // Keep unused data in cache for 5 minutes (formerly cacheTime)
+      refetchOnWindowFocus: false, // Disable auto-refetch on window focus to reduce API calls
+      refetchOnMount: false, // Only refetch if data is stale
+      staleTime: 2 * 60 * 1000, // Consider data stale after 2 minutes (increased from 30 seconds)
+      gcTime: 10 * 60 * 1000, // Keep unused data in cache for 10 minutes
       retry: 1,
       retryDelay: 1000, // Wait 1 second before retrying
       networkMode: 'online',

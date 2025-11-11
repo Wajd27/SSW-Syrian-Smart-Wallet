@@ -40,8 +40,8 @@ function Dashboard() {
     },
     enabled: !!user?.email,
     retry: 1,
-    refetchOnMount: true,
-    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
+    refetchOnMount: false, // Use default behavior (only refetch if stale)
+    refetchInterval: false, // Disable auto-refresh - use manual refresh button instead
     // Ensure query completes even on error
     throwOnError: false,
   });
@@ -76,8 +76,8 @@ function Dashboard() {
     },
     enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
     retry: 1,
-    refetchOnMount: true,
-    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
+    refetchOnMount: false, // Use default behavior (only refetch if stale)
+    refetchInterval: false, // Disable auto-refresh - use manual refresh button instead
     // Ensure query completes even on error
     throwOnError: false,
   });
@@ -98,8 +98,8 @@ function Dashboard() {
     },
     enabled: !!user?.email,
     retry: 1,
-    refetchOnMount: true,
-    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
+    refetchOnMount: false, // Use default behavior (only refetch if stale)
+    refetchInterval: false, // Disable auto-refresh - use manual refresh button instead
     // Ensure query completes even on error
     throwOnError: false,
   });
