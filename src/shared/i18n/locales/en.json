@@ -272,7 +272,26 @@
     "recommendations": "Recommendations",
     "implemented": "Implemented",
     "notImplemented": "Not Implemented",
-    "info": "The AI Assistant analyzes all your financial data (wallets, transactions, budgets, goals, investments, debts) to provide personalized recommendations. Ask questions about your finances and get actionable advice to improve your financial health."
+    "info": "The AI Assistant analyzes all your financial data (wallets, transactions, budgets, goals, investments, debts) to provide personalized recommendations. Ask questions about your finances and get actionable advice to improve your financial health.",
+    "ask": "Ask",
+    "placeholder": "Ask me anything about your finances...",
+    "conversation": "Conversation",
+    "askFollowUp": "Ask follow-up",
+    "noRecommendations": "No recommendations at this time",
+    "impact": "Impact",
+    "effort": "Effort",
+    "estimatedSavings": "Estimated Savings",
+    "errorMessage": "Sorry, I encountered an error. Please try again.",
+    "howToImplement": "How to implement: {{title}}?",
+    "user": "User",
+    "assistant": "Assistant",
+    "suggestedQuestions": {
+      "reduceExpenses": "How can I reduce my monthly expenses?",
+      "overspendingCategories": "Which categories are causing overspending?",
+      "savingsRate": "What is my savings rate and how to improve it?",
+      "debtPriority": "Which debts should I pay first?",
+      "savingsGoals": "How close am I to my savings goals?"
+    }
   },
   "reports": {
     "title": "Reports",

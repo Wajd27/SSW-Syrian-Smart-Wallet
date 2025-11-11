@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS debts (
     interest_rate DECIMAL(5, 2) DEFAULT 0,
     due_date DATE,
     creditor VARCHAR(255),
+    currency VARCHAR(3) DEFAULT 'SYP',
     is_active BOOLEAN DEFAULT true,
     wallet_owner VARCHAR(255) NOT NULL REFERENCES users(email) ON DELETE CASCADE
 );

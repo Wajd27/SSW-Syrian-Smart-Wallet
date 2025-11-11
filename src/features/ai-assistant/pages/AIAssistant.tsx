@@ -23,11 +23,11 @@ function AIAssistant() {
   const [loading, setLoading] = useState(false);
   const [conversation, setConversation] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const suggestedQuestions = [
-    'How can I reduce my monthly expenses?',
-    'Which categories are causing overspending?',
-    'What is my savings rate and how to improve it?',
-    'Which debts should I pay first?',
-    'How close am I to my savings goals?',
+    t('aiAssistant.suggestedQuestions.reduceExpenses'),
+    t('aiAssistant.suggestedQuestions.overspendingCategories'),
+    t('aiAssistant.suggestedQuestions.savingsRate'),
+    t('aiAssistant.suggestedQuestions.debtPriority'),
+    t('aiAssistant.suggestedQuestions.savingsGoals'),
   ];
 
   useEffect(() => {
@@ -53,7 +53,7 @@ function AIAssistant() {
       const wallets = await entities.wallet.filter({ owner_email: user.email, is_active: true });
       const walletIds = wallets.map((w) => w.id);
 
-      const [savingsGoals, debts, investments, budgets, transactions] = await Promise.all([
+      const [savingsGoals, debts, investments, budgets, transactions, existingRecommendations] = await Promise.all([
         Promise.all(walletIds.map((id) => entities.savingsGoal.filter({ wallet_id: id }))).then(
           (results) => results.flat()
         ),
@@ -65,6 +65,7 @@ function AIAssistant() {
         Promise.all(walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))).then(
           (results) => results.flat()
         ),
+        entities.aiRecommendation.filter({ wallet_owner: user.email }),
       ]);
 
       const context = {
@@ -73,6 +74,8 @@ function AIAssistant() {
         investments,
         budgets,
         transactions,
+        wallets,
+        existingRecommendations,
       };
 
       const response = await aiApi.getRecommendations(context);
@@ -135,7 +138,7 @@ function AIAssistant() {
       persistConversation([...conversation, { role: 'user', content: question }, { role: 'assistant', content: response }]);
       showSuccess(t('common.success'));
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : t('aiAssistant.errorMessage');
       setAnswer(errorMessage);
       showError(errorMessage);
     } finally {
@@ -176,12 +179,12 @@ function AIAssistant() {
             label={t('aiAssistant.askQuestion')}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask me anything about your finances..."
+            placeholder={t('aiAssistant.placeholder')}
             onKeyPress={(e) => e.key === 'Enter' && handleAskQuestion()}
           />
           <Button onClick={handleAskQuestion} isLoading={loading}>
             <SparklesIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
-            Ask
+            {t('aiAssistant.ask')}
           </Button>
           {answer && (
             <div className="mt-4 p-4 bg-primary-50 rounded-lg">
@@ -190,18 +193,18 @@ function AIAssistant() {
           )}
           {conversation.length > 0 && (
             <div className="mt-4">
-              <h3 className="text-md font-semibold text-gray-900 mb-2">Conversation</h3>
+              <h3 className="text-md font-semibold text-gray-900 mb-2">{t('aiAssistant.conversation')}</h3>
               <div className="space-y-2 max-h-64 overflow-auto">
                 {conversation.map((m, i) => (
                   <div key={i} className={`p-3 rounded-lg ${m.role === 'user' ? 'bg-blue-50 text-blue-900' : 'bg-gray-50 text-gray-800'}`}>
-                    <span className="text-xs uppercase font-semibold mr-2 rtl:ml-2 rtl:mr-0">{m.role}</span>
+                    <span className="text-xs uppercase font-semibold mr-2 rtl:ml-2 rtl:mr-0">{m.role === 'user' ? t('aiAssistant.user') : t('aiAssistant.assistant')}</span>
                     <span>{m.content}</span>
                   </div>
                 ))}
               </div>
               <div className="flex justify-end mt-2">
                 <Button variant="outline" size="sm" onClick={() => persistConversation([])}>
-                  {t('common.clear') || 'Clear'}
+                  {t('common.clear')}
                 </Button>
               </div>
             </div>
@@ -227,17 +230,17 @@ function AIAssistant() {
                 </div>
                 <div className="flex items-center justify-between text-sm mb-4">
                   <div>
-                    <span className="text-gray-500">Impact: </span>
+                    <span className="text-gray-500">{t('aiAssistant.impact')}: </span>
                     <span className="font-semibold capitalize">{rec.impact}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Effort: </span>
+                    <span className="text-gray-500">{t('aiAssistant.effort')}: </span>
                     <span className="font-semibold capitalize">{rec.effort}</span>
                   </div>
                 </div>
                 {rec.estimated_savings && (
                   <p className="text-sm text-green-600 font-semibold mb-4">
-                    Estimated Savings: {rec.estimated_savings.toLocaleString()} SYP
+                    {t('aiAssistant.estimatedSavings')}: {rec.estimated_savings.toLocaleString()} SYP
                   </p>
                 )}
                 {existing ? (
@@ -259,9 +262,9 @@ function AIAssistant() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      onClick={() => setQuestion(`How to implement: ${rec.title}?`)}
+                      onClick={() => setQuestion(t('aiAssistant.howToImplement', { title: rec.title }))}
                     >
-                      Ask follow-up
+                      {t('aiAssistant.askFollowUp')}
                     </Button>
                   </div>
                 ) : (
@@ -279,7 +282,7 @@ function AIAssistant() {
         </div>
         {recommendations?.length === 0 && (
           <Card>
-            <p className="text-center text-gray-500 py-8">No recommendations at this time</p>
+            <p className="text-center text-gray-500 py-8">{t('aiAssistant.noRecommendations')}</p>
           </Card>
         )}
       </div>
