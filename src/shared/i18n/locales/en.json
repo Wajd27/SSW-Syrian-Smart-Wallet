@@ -198,7 +198,8 @@
     "budgetAlerts": "Budget Threshold Alerts",
     "budgetThreshold": "Budget Threshold (%)",
     "savingsMilestones": "Savings Goal Milestones",
-    "investmentUpdates": "Investment Updates"
+    "investmentUpdates": "Investment Updates",
+    "developedBy": "Developed by"
   },
   "notifications": {
     "title": "Notifications",

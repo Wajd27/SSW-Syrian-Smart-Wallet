@@ -256,6 +256,15 @@ function Settings() {
           </Button>
         </div>
       </form>
+
+      {/* Developer Info */}
+      <Card className="mt-8">
+        <div className="text-center py-4">
+          <p className="text-sm text-gray-600">
+            {t('settings.developedBy') || 'Developed by'} <span className="font-semibold text-gray-800">Wajd Hannoun</span>
+          </p>
+        </div>
+      </Card>
     </div>
   );
 }

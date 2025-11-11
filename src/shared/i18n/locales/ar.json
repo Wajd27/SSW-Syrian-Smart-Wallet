@@ -198,7 +198,8 @@
     "budgetAlerts": "تنبيهات عتبة الميزانية",
     "budgetThreshold": "عتبة الميزانية (%)",
     "savingsMilestones": "معالم أهداف الادخار",
-    "investmentUpdates": "تحديثات الاستثمارات"
+    "investmentUpdates": "تحديثات الاستثمارات",
+    "developedBy": "تم التطوير بواسطة"
   },
   "notifications": {
     "title": "الإشعارات",
