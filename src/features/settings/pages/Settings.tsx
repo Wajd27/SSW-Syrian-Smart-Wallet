@@ -22,6 +22,9 @@ function Settings() {
       budget_threshold: user?.notification_settings?.budget_threshold || 80,
       savings_milestones: user?.notification_settings?.savings_milestones ?? true,
       investment_updates: user?.notification_settings?.investment_updates ?? true,
+      haptic_feedback_enabled: user?.notification_settings?.haptic_feedback_enabled ?? true,
+      sound_effects_enabled: user?.notification_settings?.sound_effects_enabled ?? true,
+      sound_volume: user?.notification_settings?.sound_volume ?? 0.4,
     },
   });
 
@@ -176,6 +179,74 @@ function Settings() {
                 className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
             </div>
+          </div>
+        </Card>
+
+        <Card title={t('settings.feedbackSettings') || 'Feedback Settings'}>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-white/90 drop-shadow-sm">
+                {t('settings.enableHapticFeedback') || 'Enable Haptic Feedback'}
+              </label>
+              <input
+                type="checkbox"
+                checked={formData.notification_settings.haptic_feedback_enabled}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    notification_settings: {
+                      ...formData.notification_settings,
+                      haptic_feedback_enabled: e.target.checked,
+                    },
+                  })
+                }
+                className="rounded border-white/30 bg-white/10 text-primary-600 focus:ring-primary-500"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-white/90 drop-shadow-sm">
+                {t('settings.enableSoundEffects') || 'Enable Sound Effects'}
+              </label>
+              <input
+                type="checkbox"
+                checked={formData.notification_settings.sound_effects_enabled}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    notification_settings: {
+                      ...formData.notification_settings,
+                      sound_effects_enabled: e.target.checked,
+                    },
+                  })
+                }
+                className="rounded border-white/30 bg-white/10 text-primary-600 focus:ring-primary-500"
+              />
+            </div>
+            {formData.notification_settings.sound_effects_enabled && (
+              <div>
+                <label className="block text-sm font-medium text-white/90 drop-shadow-sm mb-2">
+                  {t('settings.soundVolume') || 'Sound Volume'}:{' '}
+                  {Math.round((formData.notification_settings.sound_volume || 0.4) * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={formData.notification_settings.sound_volume || 0.4}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      notification_settings: {
+                        ...formData.notification_settings,
+                        sound_volume: parseFloat(e.target.value),
+                      },
+                    })
+                  }
+                  className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                />
+              </div>
+            )}
           </div>
         </Card>
 

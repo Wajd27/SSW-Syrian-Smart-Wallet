@@ -40,7 +40,7 @@ function Register() {
       <div className="max-w-md w-full space-y-8 animate-scale-in">
         <div className="glass-card backdrop-blur-xl bg-white/20 border border-white/30 rounded-2xl p-8 shadow-2xl">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-white drop-shadow-lg">
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-800 drop-shadow-sm">
               {t('auth.register')}
             </h2>
           </div>
@@ -52,7 +52,7 @@ function Register() {
           )}
           <div className="space-y-4">
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.fullName')}
               </label>
               <input
@@ -60,13 +60,13 @@ function Register() {
                 name="fullName"
                 type="text"
                 required
-                className="input mt-1 text-white placeholder:text-white/50"
+                className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.email')}
               </label>
               <input
@@ -74,13 +74,13 @@ function Register() {
                 name="email"
                 type="email"
                 required
-                className="input mt-1 text-white placeholder:text-white/50"
+                className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.password')}
               </label>
               <input
@@ -88,13 +88,13 @@ function Register() {
                 name="password"
                 type="password"
                 required
-                className="input mt-1 text-white placeholder:text-white/50"
+                className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.confirmPassword')}
               </label>
               <input
@@ -102,7 +102,7 @@ function Register() {
                 name="confirmPassword"
                 type="password"
                 required
-                className="input mt-1 text-white placeholder:text-white/50"
+                className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
               />
@@ -120,7 +120,7 @@ function Register() {
           </div>
 
           <div className="text-center">
-            <Link to="/login" className="text-sm text-white/80 hover:text-white transition-colors duration-300">
+            <Link to="/login" className="text-sm text-blue-600 hover:text-blue-700 transition-colors duration-300">
               {t('auth.alreadyHaveAccount')}
             </Link>
           </div>

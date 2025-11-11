@@ -11,6 +11,7 @@ import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import { useFeedback } from '@/shared/hooks/useFeedback';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SavingsGoal } from '@/shared/types/entities';
 import { formatCurrency } from '@/shared/lib/formatters';
@@ -19,6 +20,7 @@ function SavingsGoals() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { triggerFeedback } = useFeedback();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const [formData, setFormData] = useState({
@@ -66,6 +68,10 @@ function SavingsGoals() {
       queryClient.invalidateQueries({ queryKey: ['savings-goals'] });
       setIsModalOpen(false);
       resetForm();
+      triggerFeedback('success');
+    },
+    onError: () => {
+      triggerFeedback('error');
     },
   });
 
@@ -77,6 +83,10 @@ function SavingsGoals() {
       setIsModalOpen(false);
       setEditingGoal(null);
       resetForm();
+      triggerFeedback('success');
+    },
+    onError: () => {
+      triggerFeedback('error');
     },
   });
 
@@ -85,10 +95,15 @@ function SavingsGoals() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savings-goals'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      triggerFeedback('success');
+    },
+    onError: () => {
+      triggerFeedback('error');
     },
   });
 
   const handleDelete = (id: string, title: string) => {
+    triggerFeedback('warning');
     if (window.confirm(t('common.confirmDelete', { name: title }))) {
       deleteMutation.mutate(id);
     }
@@ -148,7 +163,7 @@ function SavingsGoals() {
     <PullToRefresh queryKeys={['savings-goals', 'wallets']}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('savingsGoals.title')}</h1>
+          <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('savingsGoals.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('savingsGoals.addGoal')}
@@ -167,12 +182,12 @@ function SavingsGoals() {
                 >
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{goal.title}</h3>
-                  <span className="px-2 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
+                  <h3 className="text-lg font-semibold text-gray-800">{goal.title}</h3>
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
                     {wallet?.currency || 'SYP'}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">{wallet?.name}</p>
+                <p className="text-sm text-gray-600">{wallet?.name}</p>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">

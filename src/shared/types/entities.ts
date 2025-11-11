@@ -21,6 +21,10 @@ export interface NotificationSettings {
   budget_threshold?: number; // percentage
   savings_milestones?: boolean;
   investment_updates?: boolean;
+  // Feedback preferences
+  haptic_feedback_enabled?: boolean;
+  sound_effects_enabled?: boolean;
+  sound_volume?: number; // 0-1, default 0.4
 }
 
 // Wallet Entity
@@ -157,6 +161,7 @@ export interface Debt extends BaseEntity {
   interest_rate: number;
   due_date: string;
   creditor: string;
+  currency: string;
   is_active: boolean;
   wallet_owner: string;
 }

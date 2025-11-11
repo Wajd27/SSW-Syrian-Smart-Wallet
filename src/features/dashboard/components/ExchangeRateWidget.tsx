@@ -65,15 +65,15 @@ function ExchangeRateWidget() {
                 <LoadingSpinner size="sm" />
               ) : (
                 <>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-800">
                     1 USD = {displayRate?.toLocaleString()} SYP
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-600">
                       {userRate ? t('dashboard.lastUsedRate') : t('dashboard.liveRate')}
                     </p>
                     {userRate && liveRate && userRate !== liveRate && (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         ({t('dashboard.liveRate')}: {liveRate.toLocaleString()})
                       </span>
                     )}

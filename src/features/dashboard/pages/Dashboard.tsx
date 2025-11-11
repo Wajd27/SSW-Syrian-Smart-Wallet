@@ -33,14 +33,14 @@ function Dashboard() {
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions', 'summary', user?.email],
     queryFn: async () => {
-      if (!user?.email || !wallets) return [];
+      if (!user?.email || !wallets || wallets.length === 0) return [];
       const walletIds = wallets.map((w) => w.id);
       const allTransactions = await Promise.all(
         walletIds.map((id) => entities.transaction.filter({ wallet_id: id }))
       );
       return allTransactions.flat();
     },
-    enabled: !!user?.email && !!wallets,
+    enabled: !!user?.email && !!wallets && wallets.length > 0,
   });
 
   const { data: familyMembers, isLoading: familyLoading } = useQuery({
@@ -52,39 +52,44 @@ function Dashboard() {
     enabled: !!user?.email,
   });
 
-  if (walletsLoading || transactionsLoading || familyLoading) {
+  if (walletsLoading || (transactionsLoading && wallets && wallets.length > 0) || familyLoading) {
     return <LoadingSpinner size="lg" className="min-h-screen" />;
   }
 
-  // Calculate stats
+  // Ensure we have valid data
+  const safeWallets = wallets || [];
+  const safeTransactions = transactions || [];
+  const safeFamilyMembers = familyMembers || [];
+
+  // Calculate stats with safe defaults
   const totalBalance =
-    wallets?.reduce((sum, wallet) => {
-      const walletTransactions = transactions?.filter((t) => t.wallet_id === wallet.id) || [];
+    safeWallets.reduce((sum, wallet) => {
+      const walletTransactions = safeTransactions.filter((t) => t.wallet_id === wallet.id);
       const balance = walletTransactions.reduce((balanceSum, t) => {
         if (t.type === 'income') {
           return balanceSum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
         } else {
           return balanceSum - (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
         }
-      }, wallet.initial_balance);
+      }, wallet.initial_balance || 0);
       return sum + balance;
-    }, 0) || 0;
+    }, 0);
 
   const totalIncome =
-    transactions?.reduce((sum, t) => {
+    safeTransactions.reduce((sum, t) => {
       if (t.type === 'income') {
         return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
       }
       return sum;
-    }, 0) || 0;
+    }, 0);
 
   const totalExpenses =
-    transactions?.reduce((sum, t) => {
+    safeTransactions.reduce((sum, t) => {
       if (t.type === 'expense') {
         return sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp);
       }
       return sum;
-    }, 0) || 0;
+    }, 0);
 
   // Calculate monthly trends (simplified - compare current month vs previous month)
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -93,28 +98,24 @@ function Dashboard() {
   const lastMonthStr = lastMonth.toISOString().slice(0, 7);
 
   const currentMonthIncome =
-    transactions?.filter(
-      (t) => t.transaction_date.startsWith(currentMonth) && t.type === 'income'
-    ).reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0) ||
-    0;
+    safeTransactions
+      .filter((t) => t.transaction_date?.startsWith(currentMonth) && t.type === 'income')
+      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
 
   const lastMonthIncome =
-    transactions?.filter(
-      (t) => t.transaction_date.startsWith(lastMonthStr) && t.type === 'income'
-    ).reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0) ||
-    0;
+    safeTransactions
+      .filter((t) => t.transaction_date?.startsWith(lastMonthStr) && t.type === 'income')
+      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
 
   const currentMonthExpenses =
-    transactions?.filter(
-      (t) => t.transaction_date.startsWith(currentMonth) && t.type === 'expense'
-    ).reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0) ||
-    0;
+    safeTransactions
+      .filter((t) => t.transaction_date?.startsWith(currentMonth) && t.type === 'expense')
+      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
 
   const lastMonthExpenses =
-    transactions?.filter(
-      (t) => t.transaction_date.startsWith(lastMonthStr) && t.type === 'expense'
-    ).reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0) ||
-    0;
+    safeTransactions
+      .filter((t) => t.transaction_date?.startsWith(lastMonthStr) && t.type === 'expense')
+      .reduce((sum, t) => sum + (t.primary_currency === 'USD' ? t.amount_usd : t.amount_syp), 0);
 
   return (
     <PullToRefresh
@@ -130,7 +131,7 @@ function Dashboard() {
     >
       <div className="space-y-6 animate-fade-in">
         <RecurringProcessor />
-        <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('dashboard.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('dashboard.title')}</h1>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -169,7 +170,7 @@ function Dashboard() {
         <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <StatsCard
             title={t('dashboard.familyMembers')}
-            value={familyMembers?.length || 0}
+            value={safeFamilyMembers.length}
             icon={<UserGroupIcon className="w-8 h-8" />}
           />
         </div>

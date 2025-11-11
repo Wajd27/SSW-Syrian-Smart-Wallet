@@ -20,14 +20,14 @@ function StatsCard({ title, value, currency = 'SYP', icon, trend }: StatsCardPro
     <Card className="hover:shadow-lg transition-all duration-300">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-white/80 drop-shadow-sm">{title}</p>
-          <p className="text-2xl font-bold text-white mt-2 drop-shadow-md">
+          <p className="text-sm font-medium text-gray-600">{title}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-2">
             {formatCurrency(value, currency, i18n.language)}
           </p>
           {trend && (
             <p
-              className={`text-sm mt-1 drop-shadow-sm ${
-                trend.isPositive ? 'text-green-300' : 'text-red-300'
+              className={`text-sm mt-1 font-medium ${
+                trend.isPositive ? 'text-green-600' : 'text-red-600'
               }`}
             >
               {trend.isPositive ? '+' : ''}
@@ -35,7 +35,7 @@ function StatsCard({ title, value, currency = 'SYP', icon, trend }: StatsCardPro
             </p>
           )}
         </div>
-        {icon && <div className="text-white drop-shadow-lg">{icon}</div>}
+        {icon && <div className="text-blue-600">{icon}</div>}
       </div>
     </Card>
   );

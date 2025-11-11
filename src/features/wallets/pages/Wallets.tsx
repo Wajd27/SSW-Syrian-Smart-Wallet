@@ -126,7 +126,7 @@ function Wallets() {
     <PullToRefresh queryKeys={['wallets']}>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('wallets.title')}</h1>
+          <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('wallets.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('wallets.addWallet')}
@@ -142,8 +142,8 @@ function Wallets() {
           >
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">{wallet.name}</h3>
-                <p className="text-sm text-gray-500">{wallet.type}</p>
+                <h3 className="text-lg font-semibold text-gray-800">{wallet.name}</h3>
+                <p className="text-sm text-gray-600">{wallet.type}</p>
               </div>
               <span
                 className={`px-2 py-1 text-xs rounded-full ${

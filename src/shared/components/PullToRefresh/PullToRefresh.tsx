@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { useFeedback } from '@/shared/hooks/useFeedback';
 
 interface PullToRefreshProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ function PullToRefresh({
   const currentY = useRef<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const { triggerFeedback } = useFeedback();
 
   useEffect(() => {
     if (disabled) return;
@@ -57,6 +59,8 @@ function PullToRefresh({
       if (pullDistance >= threshold) {
         setIsRefreshing(true);
         setPullDistance(threshold);
+        // Light vibration when threshold reached
+        triggerFeedback('click');
 
         try {
           if (onRefresh) {
@@ -75,8 +79,12 @@ function PullToRefresh({
 
           // Wait a bit for the refresh to complete
           await new Promise((resolve) => setTimeout(resolve, 500));
+          
+          // Success feedback when refresh completes
+          triggerFeedback('success');
         } catch (error) {
           console.error('Refresh error:', error);
+          triggerFeedback('error');
         } finally {
           setIsRefreshing(false);
           setPullDistance(0);

@@ -1,5 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
+import { useFeedback } from '@/shared/hooks/useFeedback';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'outline';
@@ -27,8 +28,27 @@ function Button({
   isLoading = false,
   disabled,
   className,
+  onClick,
   ...props
 }: ButtonProps) {
+  const { triggerFeedback } = useFeedback();
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    // Trigger feedback based on variant
+    if (!disabled && !isLoading) {
+      if (variant === 'danger') {
+        triggerFeedback('warning');
+      } else if (variant === 'primary') {
+        triggerFeedback('click');
+      } else {
+        triggerFeedback('click');
+      }
+    }
+
+    // Call original onClick handler
+    onClick?.(e);
+  };
+
   return (
     <button
       className={clsx(
@@ -38,6 +58,7 @@ function Button({
         className
       )}
       disabled={disabled || isLoading}
+      onClick={handleClick}
       {...props}
     >
       {isLoading ? (

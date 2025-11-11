@@ -50,18 +50,18 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
                 className={`w-full ${sizeClasses[size]} transform overflow-hidden rounded-2xl glass-card backdrop-blur-xl bg-white/20 border border-white/30 p-6 text-left align-middle shadow-2xl transition-all`}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-white drop-shadow-md">
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-800">
                     {title}
                   </Dialog.Title>
                   <button
                     type="button"
-                    className="text-white/80 hover:text-white hover:bg-white/20 rounded-md p-1 transition-all duration-300"
+                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md p-1 transition-all duration-300"
                     onClick={onClose}
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
                 </div>
-                <div className="text-white/90">
+                <div className="text-gray-700">
                   {children}
                 </div>
               </Dialog.Panel>

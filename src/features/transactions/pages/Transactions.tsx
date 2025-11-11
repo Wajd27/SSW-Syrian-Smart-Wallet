@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/context/AuthContext';
 import { filesApi } from '@/shared/api/files';
 import Card from '@/shared/components/Card/Card';
 import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
+import { useFeedback } from '@/shared/hooks/useFeedback';
 import Button from '@/shared/components/Button/Button';
 import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
@@ -22,6 +23,7 @@ function Transactions() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { triggerFeedback } = useFeedback();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isModalOpen, setIsModalOpen] = useState(searchParams.get('action') === 'add');
   const [editingTransaction, setEditingTransaction] = useState<TransactionType | null>(null);
@@ -109,6 +111,10 @@ function Transactions() {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setIsModalOpen(false);
       resetForm();
+      triggerFeedback('success');
+    },
+    onError: () => {
+      triggerFeedback('error');
     },
   });
 
@@ -126,6 +132,10 @@ function Transactions() {
       setIsModalOpen(false);
       setEditingTransaction(null);
       resetForm();
+      triggerFeedback('success');
+    },
+    onError: () => {
+      triggerFeedback('error');
     },
   });
 
@@ -134,6 +144,10 @@ function Transactions() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      triggerFeedback('success');
+    },
+    onError: () => {
+      triggerFeedback('error');
     },
   });
 
@@ -238,7 +252,7 @@ function Transactions() {
     >
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white drop-shadow-lg">{t('transactions.title')}</h1>
+          <h1 className="text-2xl font-bold text-gray-800 drop-shadow-sm">{t('transactions.title')}</h1>
         <Button onClick={() => handleOpenModal()}>
           <PlusIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
           {t('transactions.addTransaction')}

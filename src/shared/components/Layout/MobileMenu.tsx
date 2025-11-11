@@ -47,7 +47,7 @@ function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   return (
     <div className="fixed inset-y-0 left-0 rtl:left-auto rtl:right-0 z-50 w-64 glass-card backdrop-blur-xl bg-white/20 shadow-2xl lg:hidden animate-slide-up">
       <div className="flex items-center justify-between h-16 px-4 border-b border-white/30">
-        <h2 className="text-lg font-semibold text-white drop-shadow-lg">{t('common.appName')}</h2>
+        <h2 className="text-lg font-semibold text-gray-800 drop-shadow-sm">{t('common.appName')}</h2>
         <button
           onClick={onClose}
           className="p-2 rounded-md text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
@@ -66,8 +66,8 @@ function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               className={({ isActive }) =>
                 `flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
                   isActive
-                    ? 'bg-white/30 text-white shadow-lg backdrop-blur-md'
-                    : 'text-white/80 hover:bg-white/20 hover:text-white'
+                    ? 'bg-blue-100/80 text-blue-900 shadow-lg backdrop-blur-md'
+                    : 'text-gray-700 hover:bg-blue-50/60 hover:text-blue-900'
                 }`
               }
             >
@@ -83,7 +83,7 @@ function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             logout();
             onClose();
           }}
-          className="flex items-center w-full px-4 py-2 text-sm font-medium text-white/90 rounded-lg hover:bg-red-500/30 hover:text-white transition-all duration-300"
+          className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-red-100/60 hover:text-red-700 transition-all duration-300"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 ml-3 rtl:ml-0 rtl:mr-3" />
           {t('auth.logout')}

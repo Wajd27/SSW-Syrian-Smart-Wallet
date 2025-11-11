@@ -30,7 +30,7 @@ function Login() {
       <div className="max-w-md w-full space-y-8 animate-scale-in">
         <div className="glass-card backdrop-blur-xl bg-white/20 border border-white/30 rounded-2xl p-8 shadow-2xl">
           <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-white drop-shadow-lg">
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-800 drop-shadow-sm">
               {t('auth.login')}
             </h2>
           </div>
@@ -42,7 +42,7 @@ function Login() {
           )}
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.email')}
               </label>
               <input
@@ -50,13 +50,13 @@ function Login() {
                 name="email"
                 type="email"
                 required
-                className="input mt-1 text-white placeholder:text-white/50"
+                className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 {t('auth.password')}
               </label>
               <input
@@ -64,7 +64,7 @@ function Login() {
                 name="password"
                 type="password"
                 required
-                className="input mt-1 text-white placeholder:text-white/50"
+                className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -82,7 +82,7 @@ function Login() {
           </div>
 
           <div className="text-center">
-            <Link to="/register" className="text-sm text-white/80 hover:text-white transition-colors duration-300">
+            <Link to="/register" className="text-sm text-blue-600 hover:text-blue-700 transition-colors duration-300">
               {t('auth.dontHaveAccount')}
             </Link>
           </div>

@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { entities } from '@/shared/api/entities';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { BellIcon } from '@heroicons/react/24/outline';
 import NotificationPopover from './NotificationPopover';
+import { useFeedback } from '@/shared/hooks/useFeedback';
 
 function NotificationBell() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const { triggerFeedback } = useFeedback();
+  const previousCountRef = useRef<number>(0);
 
   const { data: notifications } = useQuery({
     queryKey: ['notifications', user?.email],
@@ -21,10 +24,21 @@ function NotificationBell() {
 
   const unreadCount = notifications?.length || 0;
 
+  // Trigger feedback when new notification arrives
+  useEffect(() => {
+    if (previousCountRef.current > 0 && unreadCount > previousCountRef.current) {
+      triggerFeedback('notification');
+    }
+    previousCountRef.current = unreadCount;
+  }, [unreadCount, triggerFeedback]);
+
   return (
     <div className="relative">
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          triggerFeedback('click');
+          setIsOpen(!isOpen);
+        }}
         className="relative p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 transition-colors"
       >
         <BellIcon className="w-5 h-5" />

@@ -7,6 +7,7 @@ import Card from '@/shared/components/Card/Card';
 import Button from '@/shared/components/Button/Button';
 import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
+import Select from '@/shared/components/Forms/Select';
 import DatePicker from '@/shared/components/Forms/DatePicker';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -28,6 +29,7 @@ function Debts() {
     interest_rate: 0,
     due_date: '',
     creditor: '',
+    currency: user?.default_currency || 'SYP',
   });
 
   const { data: debts, isLoading } = useQuery({
@@ -83,6 +85,7 @@ function Debts() {
       interest_rate: 0,
       due_date: '',
       creditor: '',
+      currency: user?.default_currency || 'SYP',
     });
   };
 
@@ -98,6 +101,7 @@ function Debts() {
         interest_rate: debt.interest_rate,
         due_date: debt.due_date,
         creditor: debt.creditor,
+        currency: debt.currency || user?.default_currency || 'SYP',
       });
     } else {
       setEditingDebt(null);
@@ -143,27 +147,32 @@ function Debts() {
           return (
             <Card key={debt.id} className="hover:shadow-lg transition-shadow">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">{debt.name}</h3>
-                <p className="text-sm text-gray-500">{debt.type}</p>
-                <p className="text-xs text-gray-400">{debt.creditor}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800">{debt.name}</h3>
+                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                    {debt.currency || user?.default_currency || 'SYP'}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600">{debt.type}</p>
+                <p className="text-xs text-gray-500">{debt.creditor}</p>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t('debts.originalAmount')}:</span>
                   <span className="font-semibold">
-                    {formatCurrency(debt.original_amount, 'SYP', i18n.language)}
+                    {formatCurrency(debt.original_amount, debt.currency || user?.default_currency || 'SYP', i18n.language)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t('debts.currentBalance')}:</span>
                   <span className="font-semibold">
-                    {formatCurrency(debt.current_balance, 'SYP', i18n.language)}
+                    {formatCurrency(debt.current_balance, debt.currency || user?.default_currency || 'SYP', i18n.language)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">{t('debts.minimumPayment')}:</span>
                   <span className="font-semibold">
-                    {formatCurrency(debt.minimum_payment, 'SYP', i18n.language)}
+                    {formatCurrency(debt.minimum_payment, debt.currency || user?.default_currency || 'SYP', i18n.language)}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -282,6 +291,16 @@ function Debts() {
             label={t('debts.creditor')}
             value={formData.creditor}
             onChange={(e) => setFormData({ ...formData, creditor: e.target.value })}
+          />
+          <Select
+            label={t('wallets.currency')}
+            value={formData.currency}
+            onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+            options={[
+              { value: 'SYP', label: 'SYP' },
+              { value: 'USD', label: 'USD' },
+            ]}
+            required
           />
           <DatePicker
             label={t('debts.dueDate')}

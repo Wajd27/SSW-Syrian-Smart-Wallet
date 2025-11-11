@@ -17,26 +17,26 @@ function Select({ label, error, helperText, options, className, ...props }: Sele
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={props.id} className="block text-sm font-medium text-white/90 mb-1 drop-shadow-sm">
+        <label htmlFor={props.id} className="block text-sm font-medium text-gray-700 mb-1">
           {label}
         </label>
       )}
       <select
         className={clsx(
-          'input text-white',
+          'input text-gray-900',
           error && 'border-red-400/50 focus:ring-red-400/50',
           className
         )}
         {...props}
       >
         {options.map((option) => (
-          <option key={option.value} value={option.value} className="bg-gray-800 text-white">
+          <option key={option.value} value={option.value} className="bg-white text-gray-900">
             {option.label}
           </option>
         ))}
       </select>
-      {error && <p className="mt-1 text-sm text-red-300 drop-shadow-sm">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-sm text-white/70 drop-shadow-sm">{helperText}</p>}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-gray-600">{helperText}</p>}
     </div>
   );
 }

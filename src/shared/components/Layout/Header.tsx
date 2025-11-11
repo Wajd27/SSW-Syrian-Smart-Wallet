@@ -18,7 +18,7 @@ function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center">
             <button
               onClick={onMenuClick}
-              className="lg:hidden p-2 rounded-md text-white/80 hover:text-white hover:bg-white/20 transition-all duration-300"
+              className="lg:hidden p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300"
             >
               <svg
                 className="h-6 w-6"
@@ -34,7 +34,7 @@ function Header({ onMenuClick }: HeaderProps) {
                 />
               </svg>
             </button>
-            <h1 className="ml-2 lg:ml-0 rtl:ml-0 rtl:mr-2 rtl:lg:mr-0 text-xl font-semibold text-white drop-shadow-lg">
+            <h1 className="ml-2 lg:ml-0 rtl:ml-0 rtl:mr-2 rtl:lg:mr-0 text-xl font-semibold text-gray-800 drop-shadow-sm">
               {t('common.appName')}
             </h1>
           </div>
@@ -44,7 +44,7 @@ function Header({ onMenuClick }: HeaderProps) {
             <LanguageSwitcher />
             {user && (
               <div className="hidden sm:flex items-center space-x-2 rtl:space-x-reverse">
-                <div className="text-sm text-white/90 drop-shadow-md">
+                <div className="text-sm text-gray-700 font-medium">
                   {user.full_name || user.email}
                 </div>
               </div>
