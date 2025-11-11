@@ -78,12 +78,18 @@ function Family() {
   });
 
   // Calculate spending stats for each member
+  // Use stable reference for exchangeRate to prevent unnecessary recalculations
+  const exchangeRate = user?.last_exchange_rate || 1;
+  
   const memberStats = useMemo(() => {
-    if (!members || !transactions || !Array.isArray(members) || !Array.isArray(transactions)) {
+    if (!Array.isArray(members) || members.length === 0) {
       return new Map();
     }
+    if (!Array.isArray(transactions)) {
+      return new Map();
+    }
+    
     const statsMap = new Map();
-    const exchangeRate = user?.last_exchange_rate || 1;
     members.forEach((member) => {
       if (member && member.is_active && member.id) {
         try {
@@ -97,7 +103,7 @@ function Family() {
       }
     });
     return statsMap;
-  }, [members, transactions, user?.last_exchange_rate]);
+  }, [members, transactions, exchangeRate]);
 
   const createMutation = useMutation({
     mutationFn: entities.familyMember.create,
@@ -210,16 +216,25 @@ function Family() {
   ];
 
   // Memoize activeMembers to prevent creating new array on each render
+  // Use stable reference by checking if members array actually changed
   const activeMembers = useMemo(() => {
-    return members?.filter((m) => m.is_active) || [];
+    if (!Array.isArray(members) || members.length === 0) {
+      return [];
+    }
+    return members.filter((m) => m && m.is_active);
   }, [members]);
 
   // Find top spender
+  // Use memberStats directly but with proper null checks
   const topSpender = useMemo<FamilyMember | null>(() => {
-    if (!activeMembers.length || !transactions || !memberStats) return null;
+    if (!Array.isArray(activeMembers) || activeMembers.length === 0) return null;
+    if (!memberStats || !(memberStats instanceof Map) || memberStats.size === 0) return null;
+    if (!Array.isArray(transactions)) return null;
+    
     let maxSpending = 0;
     let topMember: FamilyMember | null = null;
     activeMembers.forEach((member) => {
+      if (!member || !member.id) return;
       const stats = memberStats.get(member.id);
       if (stats && stats.totalSpentThisMonth > maxSpending) {
         maxSpending = stats.totalSpentThisMonth;
@@ -231,10 +246,14 @@ function Family() {
 
   // Find most active (most transactions)
   const mostActive = useMemo<FamilyMember | null>(() => {
-    if (!activeMembers.length || !transactions || !memberStats) return null;
+    if (!Array.isArray(activeMembers) || activeMembers.length === 0) return null;
+    if (!memberStats || !(memberStats instanceof Map) || memberStats.size === 0) return null;
+    if (!Array.isArray(transactions)) return null;
+    
     let maxTransactions = 0;
     let activeMember: FamilyMember | null = null;
     activeMembers.forEach((member) => {
+      if (!member || !member.id) return;
       const stats = memberStats.get(member.id);
       if (stats && stats.transactionCount > maxTransactions) {
         maxTransactions = stats.transactionCount;
