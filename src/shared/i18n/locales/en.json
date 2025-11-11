@@ -268,6 +268,7 @@
   },
   "aiAssistant": {
     "title": "AI Assistant",
+    "subtitle": "Your financial advisor",
     "askQuestion": "Ask a question",
     "recommendations": "Recommendations",
     "implemented": "Implemented",
@@ -285,6 +286,11 @@
     "howToImplement": "How to implement: {{title}}?",
     "user": "User",
     "assistant": "Assistant",
+    "welcomeTitle": "Welcome! How can I help you today?",
+    "welcomeMessage": "I'm here to help you manage your finances better. Ask me anything about your financial situation, goals, or get personalized recommendations.",
+    "suggestedQuestionsTitle": "Suggested Questions",
+    "showMore": "Show More",
+    "showLess": "Show Less",
     "suggestedQuestions": {
       "reduceExpenses": "How can I reduce my monthly expenses?",
       "overspendingCategories": "Which categories are causing overspending?",

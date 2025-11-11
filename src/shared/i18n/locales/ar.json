@@ -268,6 +268,7 @@
   },
   "aiAssistant": {
     "title": "مساعد الذكاء الاصطناعي",
+    "subtitle": "مستشارك المالي",
     "askQuestion": "اطرح سؤالاً",
     "recommendations": "التوصيات",
     "implemented": "مُنفذ",
@@ -285,6 +286,11 @@
     "howToImplement": "كيف أنفذ: {{title}}؟",
     "user": "المستخدم",
     "assistant": "المساعد",
+    "welcomeTitle": "مرحباً! كيف يمكنني مساعدتك اليوم؟",
+    "welcomeMessage": "أنا هنا لمساعدتك في إدارة أموالك بشكل أفضل. اسألني أي شيء عن وضعك المالي، أهدافك، أو احصل على توصيات مخصصة.",
+    "suggestedQuestionsTitle": "أسئلة مقترحة",
+    "showMore": "عرض المزيد",
+    "showLess": "عرض أقل",
     "suggestedQuestions": {
       "reduceExpenses": "كيف يمكنني تقليل مصروفاتي الشهرية؟",
       "overspendingCategories": "أي الفئات تسبب الإنفاق الزائد؟",
