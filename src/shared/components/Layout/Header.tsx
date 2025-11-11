@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import NotificationBell from '../NotificationBell/NotificationBell';
 import InstallButton from '../InstallButton/InstallButton';
 import UserGuide from '../UserGuide/UserGuide';
 import FamilyMemberSwitcher from '../FamilyMemberSwitcher/FamilyMemberSwitcher';
+import RefreshButton from '../RefreshButton/RefreshButton';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 
 interface HeaderProps {
@@ -15,7 +17,24 @@ interface HeaderProps {
 function Header({ onMenuClick }: HeaderProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const location = useLocation();
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+
+  // Map routes to their query keys for refresh
+  const getRefreshQueryKeys = () => {
+    const path = location.pathname;
+    if (path === '/') return ['wallets', 'transactions', 'family-members', 'dashboard'];
+    if (path === '/transactions') return ['transactions', 'wallets'];
+    if (path === '/wallets') return ['wallets'];
+    if (path === '/family') return ['family-members', 'transactions'];
+    if (path === '/budgets') return ['budgets', 'transactions', 'wallets'];
+    if (path === '/debts') return ['debts'];
+    if (path === '/savings-goals') return ['savings-goals', 'wallets'];
+    if (path === '/investments') return ['investments', 'savings-goals', 'wallets'];
+    if (path === '/recurring') return ['recurring-transactions', 'wallets', 'family-members'];
+    if (path === '/reports') return ['wallets', 'transactions', 'investments', 'reports'];
+    return [];
+  };
 
   return (
     <header className="glass-card backdrop-blur-xl bg-white/20 border-b border-white/30 sticky top-0 z-40 shadow-lg">
@@ -53,6 +72,14 @@ function Header({ onMenuClick }: HeaderProps) {
           </div>
 
           <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 rtl:space-x-reverse">
+            {/* Refresh Button - only show on main pages */}
+            {getRefreshQueryKeys().length > 0 && (
+              <RefreshButton 
+                queryKeys={getRefreshQueryKeys()} 
+                size="sm"
+                className="hidden sm:block"
+              />
+            )}
             <button
               onClick={() => setIsGuideOpen(true)}
               className="p-1.5 sm:p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300"

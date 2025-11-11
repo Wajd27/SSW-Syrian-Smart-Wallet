@@ -9,7 +9,6 @@ import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useToast } from '@/shared/hooks/useToast';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -139,8 +138,7 @@ function Wallets() {
   }
 
   return (
-    <PullToRefresh queryKeys={['wallets']}>
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800 drop-shadow-sm">{t('wallets.title')}</h1>
@@ -285,8 +283,7 @@ function Wallets() {
           </div>
         </form>
       </Modal>
-      </div>
-    </PullToRefresh>
+    </div>
   );
 }
 

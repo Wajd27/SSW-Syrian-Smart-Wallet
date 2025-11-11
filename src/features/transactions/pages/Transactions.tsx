@@ -6,7 +6,6 @@ import { entities } from '@/shared/api/entities';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { filesApi } from '@/shared/api/files';
 import Card from '@/shared/components/Card/Card';
-import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useFeedback } from '@/shared/hooks/useFeedback';
 import { useToast } from '@/shared/hooks/useToast';
 import Button from '@/shared/components/Button/Button';
@@ -66,6 +65,7 @@ function Transactions() {
     },
     enabled: !!user?.email,
     refetchOnMount: true,
+    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
   });
 
   const { data: familyMembers } = useQuery({
@@ -321,16 +321,7 @@ function Transactions() {
   }
 
   return (
-    <PullToRefresh
-      queryKeys={['transactions', 'wallets']}
-      onRefresh={async () => {
-        if (user?.email && wallets) {
-          const walletIds = wallets.map((w) => w.id);
-          await Promise.all(walletIds.map((id) => entities.transaction.filter({ wallet_id: id })));
-        }
-      }}
-    >
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800 drop-shadow-sm">{t('transactions.title')}</h1>
@@ -695,8 +686,7 @@ function Transactions() {
           </div>
         </form>
       </Modal>
-      </div>
-    </PullToRefresh>
+    </div>
   );
 }
 

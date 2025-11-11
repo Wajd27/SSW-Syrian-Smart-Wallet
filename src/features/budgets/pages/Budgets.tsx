@@ -9,7 +9,6 @@ import Modal from '@/shared/components/Modal/Modal';
 import Input from '@/shared/components/Forms/Input';
 import Select from '@/shared/components/Forms/Select';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useFeedback } from '@/shared/hooks/useFeedback';
 import { useToast } from '@/shared/hooks/useToast';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
@@ -306,8 +305,7 @@ function Budgets() {
   }
 
   return (
-    <PullToRefresh queryKeys={['budgets', 'transactions', 'wallets']}>
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -570,8 +568,7 @@ function Budgets() {
           </div>
         </div>
       </Modal>
-      </div>
-    </PullToRefresh>
+    </div>
   );
 }
 

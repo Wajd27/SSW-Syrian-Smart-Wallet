@@ -8,7 +8,6 @@ import Card from '@/shared/components/Card/Card';
 import Button from '@/shared/components/Button/Button';
 import Input from '@/shared/components/Forms/Input';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import { useToast } from '@/shared/hooks/useToast';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { SparklesIcon } from '@heroicons/react/24/outline';
@@ -157,8 +156,7 @@ function AIAssistant() {
   }
 
   return (
-    <PullToRefresh queryKeys={['ai-recommendations', 'ai-recommendations-entities', 'wallets', 'transactions', 'savings-goals', 'debts', 'investments', 'budgets']}>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           <h1 className="text-2xl font-bold text-gray-900">{t('aiAssistant.title')}</h1>
           <InfoTooltip content={t('aiAssistant.info')} />
@@ -285,8 +283,7 @@ function AIAssistant() {
           </Card>
         )}
       </div>
-      </div>
-    </PullToRefresh>
+    </div>
   );
 }
 

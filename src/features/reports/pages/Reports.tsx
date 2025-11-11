@@ -7,7 +7,6 @@ import LineChart from '@/shared/components/Charts/LineChart';
 import BarChart from '@/shared/components/Charts/BarChart';
 import PieChart from '@/shared/components/Charts/PieChart';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import { formatCurrency } from '@/shared/lib/formatters';
 import { useState, useMemo } from 'react';
@@ -257,8 +256,7 @@ function Reports() {
   }, [familyMembers, transactions, monthBuckets, filters.family_member_id, user?.full_name, t]);
 
   return (
-    <PullToRefresh queryKeys={['wallets', 'transactions', 'investments', 'reports']}>
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
           <InfoTooltip content={t('reports.info')} />
@@ -376,8 +374,7 @@ function Reports() {
           )}
         </>
       )}
-      </div>
-    </PullToRefresh>
+    </div>
   );
 }
 

@@ -17,8 +17,8 @@ function PullToRefresh({
   onRefresh,
   queryKeys = [],
   threshold = 80,
-  disabled = false,
-  showRefreshButton = true, // Default to true
+  disabled = true, // Disabled by default - using smart auto-refresh instead
+  showRefreshButton = false, // Hide refresh button - using Header refresh button instead
 }: PullToRefreshProps) {
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);

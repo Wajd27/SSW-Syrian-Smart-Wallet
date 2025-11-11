@@ -12,7 +12,6 @@ import BudgetWidget from '../components/BudgetWidget';
 import FinancialHealthOverview from '../components/FinancialHealthOverview';
 import FamilySpendingWidget from '../components/FamilySpendingWidget';
 import LoadingSpinner from '@/shared/components/Loading/LoadingSpinner';
-import PullToRefresh from '@/shared/components/PullToRefresh/PullToRefresh';
 import InfoTooltip from '@/shared/components/InfoTooltip/InfoTooltip';
 import {
   WalletIcon,
@@ -42,6 +41,7 @@ function Dashboard() {
     enabled: !!user?.email,
     retry: 1,
     refetchOnMount: true,
+    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
     // Ensure query completes even on error
     throwOnError: false,
   });
@@ -77,6 +77,7 @@ function Dashboard() {
     enabled: !!user?.email && !!wallets && wallets.length > 0 && !walletsLoading,
     retry: 1,
     refetchOnMount: true,
+    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
     // Ensure query completes even on error
     throwOnError: false,
   });
@@ -98,6 +99,7 @@ function Dashboard() {
     enabled: !!user?.email,
     retry: 1,
     refetchOnMount: true,
+    refetchInterval: 60 * 1000, // Auto-refresh every 60 seconds
     // Ensure query completes even on error
     throwOnError: false,
   });
@@ -212,18 +214,7 @@ function Dashboard() {
       }, 0);
 
   return (
-    <PullToRefresh
-      queryKeys={['wallets', 'transactions', 'family-members', 'dashboard']}
-      onRefresh={async () => {
-        // Refresh all dashboard data
-        await Promise.all([
-          entities.wallet.filter({ owner_email: user!.email, is_active: true }),
-          entities.transaction.filter({}),
-          entities.familyMember.filter({ added_by: user!.email, is_active: true }),
-        ]);
-      }}
-    >
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         <RecurringProcessor />
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800 drop-shadow-sm">{t('dashboard.title')}</h1>
@@ -294,8 +285,7 @@ function Dashboard() {
         <SpendingTrendsChart />
         <CategoryDistributionChart />
       </div>
-      </div>
-    </PullToRefresh>
+    </div>
   );
 }
 
