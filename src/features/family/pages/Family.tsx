@@ -209,9 +209,7 @@ function Family() {
     }
   };
 
-  if (isLoading || transactionsLoading) {
-    return <LoadingSpinner size="lg" className="min-h-screen" />;
-  }
+  const isInitialLoading = isLoading || transactionsLoading;
 
   const relationships = [
     'Spouse',
@@ -270,6 +268,9 @@ function Family() {
 
   return (
     <div className="space-y-6">
+        {isInitialLoading && (
+          <LoadingSpinner size="lg" className="min-h-screen" />
+        )}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{t('family.title')}</h1>

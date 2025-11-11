@@ -78,10 +78,8 @@ function Reports() {
     refetchOnMount: true,
   });
 
-  if (isLoading) {
-    return <LoadingSpinner size="lg" className="min-h-screen" />;
-  }
-
+  const isInitialLoading = isLoading;
+  
   // Use stable array references to prevent unnecessary recalculations
   const stableTransactions = useStableArray(transactions);
   const stableInvestments = useStableArray(investments);
@@ -264,8 +262,17 @@ function Reports() {
     return result;
   }, [stableFamilyMembers, stableTransactions, monthBuckets, stableFilters, userName, t]);
 
+  // Extract data keys for dynamic multi-line chart (exclude 'name')
+  const familyTrendKeys = useMemo(() => {
+    if (!Array.isArray(familySpendingTrends) || familySpendingTrends.length === 0) return [] as string[];
+    return Object.keys(familySpendingTrends[0]).filter((k) => k !== 'name');
+  }, [familySpendingTrends]);
+
   return (
     <div className="space-y-6">
+        {isInitialLoading && (
+          <LoadingSpinner size="lg" className="min-h-screen" />
+        )}
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
           <InfoTooltip content={t('reports.info')} />
@@ -363,27 +370,20 @@ function Reports() {
             <Card title={t('family.memberComparison')}>
               <BarChart
                 data={familySpendingComparison}
-                dataKeys={['Spending']}
+                dataKeys={[t('family.spending')]}
                 height={300}
               />
             </Card>
           )}
           
           {familySpendingTrends.length > 0 && (
-            <Card title={t('family.spendingTrend')}>
-              <LineChart
-                data={familySpendingTrends}
-                dataKeys={[
-                  user?.full_name || t('family.ownerOnly'),
-                  ...(familyMembers.map((m) => m.name) || []),
-                ]}
-                height={300}
-              />
+            <Card title={t('family.memberTrends')}>
+              <LineChart data={familySpendingTrends} dataKeys={familyTrendKeys} height={300} />
             </Card>
           )}
         </>
       )}
-    </div>
+     </div>
   );
 }
 
