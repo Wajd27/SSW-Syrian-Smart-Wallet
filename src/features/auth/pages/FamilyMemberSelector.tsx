@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -106,7 +106,7 @@ function FamilyMemberSelector() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Owner Card */}
-          <Card
+          <div
             className={`cursor-pointer transition-all duration-300 hover:shadow-xl ${
               selectedMember === 'owner'
                 ? 'ring-4 ring-blue-500 bg-blue-50/50'
@@ -114,24 +114,26 @@ function FamilyMemberSelector() {
             }`}
             onClick={() => handleSelect('owner')}
           >
-            <div className="flex flex-col items-center text-center space-y-4">
-              <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
-                <UserIcon className="w-10 h-10 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-gray-800">
-                  {user?.full_name || user?.email}
-                </h3>
-                <p className="text-sm text-gray-500 mt-1">{t('auth.accountOwner')}</p>
-              </div>
-              {selectedMember === 'owner' && (
-                <div className="flex items-center text-blue-600 font-medium">
-                  <span>{t('common.selected')}</span>
-                  <ArrowRightIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
+            <Card>
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
+                  <UserIcon className="w-10 h-10 text-blue-600" />
                 </div>
-              )}
-            </div>
-          </Card>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    {user?.full_name || user?.email}
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">{t('auth.accountOwner')}</p>
+                </div>
+                {selectedMember === 'owner' && (
+                  <div className="flex items-center text-blue-600 font-medium">
+                    <span>{t('common.selected')}</span>
+                    <ArrowRightIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
 
           {/* Family Member Cards */}
           {familyMembers?.map((member) => {
@@ -140,7 +142,7 @@ function FamilyMemberSelector() {
             const isSelected = selectedMember === member;
 
             return (
-              <Card
+              <div
                 key={member.id}
                 className={`cursor-pointer transition-all duration-300 hover:shadow-xl ${
                   isSelected
@@ -149,34 +151,36 @@ function FamilyMemberSelector() {
                 }`}
                 onClick={() => handleSelect(member)}
               >
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-green-600">
-                      {member.name.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-800">{member.name}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{member.relationship}</p>
-                    {transactionCount > 0 && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        {transactionCount} {t('family.transactionCount').toLowerCase()}
-                      </p>
-                    )}
-                    {lastActivity && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        {t('family.lastActivity')}: {new Date(lastActivity).toLocaleDateString()}
-                      </p>
-                    )}
-                  </div>
-                  {isSelected && (
-                    <div className="flex items-center text-blue-600 font-medium">
-                      <span>{t('common.selected')}</span>
-                      <ArrowRightIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
+                <Card>
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-green-600">
+                        {member.name.charAt(0).toUpperCase()}
+                      </span>
                     </div>
-                  )}
-                </div>
-              </Card>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-800">{member.name}</h3>
+                      <p className="text-sm text-gray-500 mt-1">{member.relationship}</p>
+                      {transactionCount > 0 && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {transactionCount} {t('family.transactionCount').toLowerCase()}
+                        </p>
+                      )}
+                      {lastActivity && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {t('family.lastActivity')}: {new Date(lastActivity).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <div className="flex items-center text-blue-600 font-medium">
+                        <span>{t('common.selected')}</span>
+                        <ArrowRightIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              </div>
             );
           })}
         </div>

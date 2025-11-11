@@ -53,12 +53,6 @@ function FamilyMemberSwitcher() {
     return user?.full_name || user?.email || t('auth.accountOwner');
   };
 
-  const getCurrentRelationship = () => {
-    if (selectedFamilyMember === 'owner' || !selectedFamilyMember) {
-      return t('auth.accountOwner');
-    }
-    return selectedFamilyMember.relationship;
-  };
 
   if (!user) return null;
 

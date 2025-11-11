@@ -101,7 +101,7 @@ class ApiClient {
   }
 
   // File upload
-  async uploadFile(endpoint: string, file: File): Promise<{ url: string }> {
+  async uploadFile(endpoint: string, file: File): Promise<{ url: string; filename: string; size: number; mimetype: string }> {
     const token = this.getAuthToken();
     const formData = new FormData();
     formData.append('file', file);

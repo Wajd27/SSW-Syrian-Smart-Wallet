@@ -1,8 +1,5 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from '@tanstack/react-query';
-import { entities } from '@/shared/api/entities';
-import { useAuth } from '@/features/auth/context/AuthContext';
 import Card from '@/shared/components/Card/Card';
 import { LightBulbIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { FamilyMember, Transaction } from '@/shared/types/entities';
@@ -15,13 +12,9 @@ interface FamilyInsightsProps {
 
 function FamilyInsights({ members, transactions }: FamilyInsightsProps) {
   const { t } = useTranslation();
-  const { user } = useAuth();
 
   const insights = useMemo(() => {
     if (!members || !transactions || members.length === 0) return [];
-
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     
     const memberStats = new Map();
     members.forEach((member) => {

@@ -84,7 +84,7 @@ function FamilySpendingWidget() {
   return (
     <Card
       title={t('family.spendingDistribution')}
-      action={
+      actions={
         <Button
           variant="outline"
           size="sm"

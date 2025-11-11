@@ -95,7 +95,7 @@ export function calculateMemberSpending(
     .sort((a, b) => b.value - a.value);
 
   const favoriteCategory = categoryBreakdown.length > 0 ? categoryBreakdown[0].name : null;
-  const topCategories = categoryBreakdown.slice(0, 3);
+  const topCategories: Array<{ category: string; amount: number }> = categoryBreakdown.slice(0, 3).map((item) => ({ category: item.name, amount: item.value }));
 
   // Monthly spending (last 6 months)
   const monthlySpendingMap = new Map<string, number>();

@@ -115,17 +115,6 @@ function Family() {
     },
   });
 
-  const toggleActiveMutation = useMutation({
-    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
-      entities.familyMember.update(id, { is_active }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['family-members'] });
-      showSuccess(t('common.success'));
-    },
-    onError: (error: Error) => {
-      showError(error.message || t('common.error'));
-    },
-  });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => entities.familyMember.delete(id),
@@ -211,7 +200,7 @@ function Family() {
   const activeMembers = members?.filter((m) => m.is_active) || [];
 
   // Find top spender
-  const topSpender = useMemo(() => {
+  const topSpender = useMemo<FamilyMember | null>(() => {
     if (!activeMembers.length || !transactions) return null;
     let maxSpending = 0;
     let topMember: FamilyMember | null = null;
@@ -223,10 +212,10 @@ function Family() {
       }
     });
     return topMember;
-  }, [activeMembers, memberStats]);
+  }, [activeMembers, memberStats, transactions]);
 
   // Find most active (most transactions)
-  const mostActive = useMemo(() => {
+  const mostActive = useMemo<FamilyMember | null>(() => {
     if (!activeMembers.length || !transactions) return null;
     let maxTransactions = 0;
     let activeMember: FamilyMember | null = null;
@@ -238,7 +227,7 @@ function Family() {
       }
     });
     return activeMember;
-  }, [activeMembers, memberStats]);
+  }, [activeMembers, memberStats, transactions]);
 
   return (
     <PullToRefresh queryKeys={['family-members', 'transactions']}>
@@ -402,7 +391,7 @@ function Family() {
                     <div className="mb-4">
                       <p className="text-xs text-gray-500 mb-1">{t('family.topCategories')}</p>
                       <div className="flex flex-wrap gap-1">
-                        {stats.topCategories.map((cat, idx) => (
+                        {stats.topCategories.map((cat: { category: string; amount: number }, idx: number) => (
                           <span
                             key={idx}
                             className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
