@@ -24,7 +24,7 @@
 | `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` | Yes | Firebase Admin credentials |
 | `CORS_ORIGIN` | Optional | Frontend origin if not using defaults in code |
 | `BLOB_READ_WRITE_TOKEN` | Optional | **Vercel Blob** — set when you use Blob storage for uploads (see below) |
-| `FIREBASE_STORAGE_BUCKET` | Optional | Firebase Storage; used if Blob is not configured |
+| `FIREBASE_STORAGE_BUCKET` | Optional | Firebase Storage bucket name; if omitted, defaults to `{FIREBASE_PROJECT_ID}.appspot.com` (same as Admin SDK init) |
 | `SUPABASE_*` | Optional | Supabase Storage if neither Blob nor Firebase is used for files |
 
 See `backend/.env.example` for examples.

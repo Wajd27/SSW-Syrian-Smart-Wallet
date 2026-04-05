@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { put } from '@vercel/blob';
 import { createClient } from '@supabase/supabase-js';
-import { getApps } from 'firebase-admin/app';
+import { getApp, getApps } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { initFirebase } from '../db/firebase.js';
@@ -34,8 +34,15 @@ function useVercelBlob(): boolean {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
 }
 
-function useFirebaseStorage(): boolean {
-  return Boolean(process.env.FIREBASE_STORAGE_BUCKET);
+/** Default bucket matches firebase.ts init: env or `{projectId}.appspot.com` */
+function firebaseBucketName(): string {
+  const fromEnv = process.env.FIREBASE_STORAGE_BUCKET?.trim();
+  if (fromEnv) return fromEnv;
+  const pid = getApp().options.projectId;
+  if (!pid) {
+    throw new Error('Firebase projectId missing');
+  }
+  return `${pid}.appspot.com`;
 }
 
 router.post(
@@ -60,31 +67,39 @@ router.post(
     const emailPath = `${req.user!.email}/${fileName}`;
 
     if (useVercelBlob()) {
-      const objectPath = `${req.user!.id}/${fileName}`;
-      const blob = await put(objectPath, req.file.buffer, {
-        access: 'public',
-        contentType: req.file.mimetype,
-        addRandomSuffix: false,
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-      });
-      return res.json({
-        url: blob.url,
-        filename: fileName,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-      });
+      try {
+        const objectPath = `${req.user!.id}/${fileName}`;
+        const blob = await put(objectPath, req.file.buffer, {
+          access: 'public',
+          contentType: req.file.mimetype,
+          addRandomSuffix: false,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        });
+        return res.json({
+          url: blob.url,
+          filename: fileName,
+          size: req.file.size,
+          mimetype: req.file.mimetype,
+        });
+      } catch (blobErr) {
+        console.error('Vercel Blob upload failed, trying Firebase/Supabase:', blobErr);
+      }
     }
 
     const objectPath = emailPath;
 
-    if (useFirebaseStorage()) {
+    try {
       initFirebase();
-      if (getApps().length === 0) {
-        return res.status(500).json({ error: 'Firebase not initialized' });
-      }
-      const bucketName = process.env.FIREBASE_STORAGE_BUCKET;
-      if (!bucketName) {
-        return res.status(500).json({ error: 'FIREBASE_STORAGE_BUCKET is not set' });
+    } catch (e) {
+      console.error('initFirebase in upload:', e);
+    }
+
+    if (getApps().length > 0) {
+      let bucketName: string;
+      try {
+        bucketName = firebaseBucketName();
+      } catch (e: any) {
+        return res.status(500).json({ error: e?.message || 'Firebase bucket not configured' });
       }
       const bucket = getStorage().bucket(bucketName);
       const file = bucket.file(objectPath);
@@ -153,11 +168,13 @@ router.post('/signed-url', async (req: AuthRequest, res) => {
       return res.json({ signed_url: uri });
     }
 
-    if (uri.includes('firebasestorage.googleapis.com') && process.env.FIREBASE_STORAGE_BUCKET) {
+    if (uri.includes('firebasestorage.googleapis.com') && getApps().length > 0) {
       initFirebase();
-      const bucketName = process.env.FIREBASE_STORAGE_BUCKET;
-      if (!bucketName) {
-        return res.status(500).json({ error: 'FIREBASE_STORAGE_BUCKET is not set' });
+      let bucketName: string;
+      try {
+        bucketName = firebaseBucketName();
+      } catch (e: any) {
+        return res.status(500).json({ error: e?.message || 'Firebase bucket not configured' });
       }
       const urlObj = new URL(uri);
       const bucketInPath = urlObj.pathname.match(/\/v0\/b\/([^/]+)\/o\//);
