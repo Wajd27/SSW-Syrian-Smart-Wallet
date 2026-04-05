@@ -1,12 +1,28 @@
 import express from 'express';
-import { sql } from '../db/connection.js';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { getFirestoreDb } from '../db/firebase.js';
+import { tsToIso } from '../utils/firestore-serializers.js';
 import { hashPassword, comparePassword } from '../utils/password.js';
 import { generateToken } from '../utils/jwt.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
+const USERS = 'users';
 
-// Register
+function userPublicFields(data: Record<string, unknown>, id: string) {
+  return {
+    id,
+    email: data.email,
+    full_name: data.full_name,
+    role: data.role ?? 'user',
+    last_exchange_rate: data.last_exchange_rate,
+    default_currency: data.default_currency ?? 'SYP',
+    notification_settings: data.notification_settings ?? {},
+    created_date: tsToIso(data.created_date) ?? data.created_date,
+    updated_date: tsToIso(data.updated_date) ?? data.updated_date,
+  };
+}
+
 router.post('/register', async (req, res) => {
   try {
     const { email, password, full_name } = req.body;
@@ -15,111 +31,49 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Email, password, and full name are required' });
     }
 
-    // Check database connection
-    if (!process.env.POSTGRES_URL) {
-      console.error('POSTGRES_URL environment variable is not set');
-      return res.status(500).json({ 
-        error: 'Database configuration error',
-        message: 'POSTGRES_URL environment variable is missing'
-      });
-    }
-    
-    console.log('POSTGRES_URL is set:', !!process.env.POSTGRES_URL);
-    console.log('Attempting to check for existing user...');
+    const db = getFirestoreDb();
+    const emailNorm = String(email).toLowerCase().trim();
 
-    // Check if user exists
-    let existingUser;
-    try {
-      existingUser = await sql`
-        SELECT id FROM users WHERE email = ${email}
-      `;
-      console.log('User check completed, rows:', existingUser.rows.length);
-    } catch (dbError: any) {
-      console.error('Database query error:', dbError);
-      console.error('Error message:', dbError.message);
-      console.error('Error code:', dbError.code);
-      throw dbError;
-    }
-
-    if (existingUser.rows.length > 0) {
+    const existing = await db.collection(USERS).where('email', '==', emailNorm).limit(1).get();
+    if (!existing.empty) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // Hash password
     const passwordHash = await hashPassword(password);
-    console.log('Password hashed, attempting to create user...');
+    const now = Timestamp.now();
+    const docRef = db.collection(USERS).doc();
+    await docRef.set({
+      email: emailNorm,
+      password_hash: passwordHash,
+      full_name,
+      role: 'user',
+      default_currency: 'SYP',
+      notification_settings: {},
+      created_date: now,
+      updated_date: now,
+    });
 
-    // Create user
-    let result;
-    try {
-      result = await sql`
-        INSERT INTO users (email, password_hash, full_name, default_currency, notification_settings)
-        VALUES (${email}, ${passwordHash}, ${full_name}, 'SYP', '{}'::jsonb)
-        RETURNING id, email, full_name, role, default_currency, notification_settings, created_date, updated_date
-      `;
-      console.log('User created successfully, rows:', result.rows.length);
-    } catch (dbError: any) {
-      console.error('Database insert error:', dbError);
-      console.error('Error message:', dbError.message);
-      console.error('Error code:', dbError.code);
-      console.error('Error detail:', dbError.detail);
-      throw dbError;
-    }
-
-    const user = result.rows[0];
+    const snap = await docRef.get();
+    const data = snap.data()!;
     const token = generateToken({
-      email: user.email,
-      id: user.id,
-      full_name: user.full_name,
+      email: emailNorm,
+      id: docRef.id,
+      full_name: data.full_name as string,
     });
 
     res.status(201).json({
-      user: {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role,
-        default_currency: user.default_currency,
-        notification_settings: user.notification_settings,
-        created_date: user.created_date,
-        updated_date: user.updated_date,
-      },
+      user: userPublicFields(data, docRef.id),
       token,
     });
   } catch (error: any) {
     console.error('Register error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error code:', error.code);
-    console.error('Error detail:', error.detail);
-    
-    // Provide more helpful error messages
-    let errorMessage = error.message || 'Registration failed';
-    if (error.code === '42P01') {
-      errorMessage = 'Database table not found. Please run the database schema.';
-    } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-      errorMessage = 'Database connection failed. Please check POSTGRES_URL.';
-    } else if (error.message?.includes('relation') && error.message?.includes('does not exist')) {
-      errorMessage = 'Database table missing. Please run the database schema.';
-    }
-    
-    // Always include error code and a hint, even in production
-    const errorResponse: any = { 
-      error: errorMessage,
-      code: error.code || 'UNKNOWN_ERROR'
-    };
-    
-    // Add more details in non-production
-    if (process.env.NODE_ENV !== 'production') {
-      errorResponse.details = error.stack;
-      errorResponse.type = error.constructor?.name;
-      errorResponse.originalMessage = error.message;
-    }
-    
-    res.status(500).json(errorResponse);
+    res.status(500).json({
+      error: error.message || 'Registration failed',
+      code: error.code || 'UNKNOWN_ERROR',
+    });
   }
 });
 
-// Login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -128,43 +82,29 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Find user
-    const result = await sql`
-      SELECT id, email, password_hash, full_name, role, default_currency, notification_settings, created_date, updated_date
-      FROM users
-      WHERE email = ${email}
-    `;
+    const db = getFirestoreDb();
+    const emailNorm = String(email).toLowerCase().trim();
 
-    if (result.rows.length === 0) {
+    const q = await db.collection(USERS).where('email', '==', emailNorm).limit(1).get();
+    if (q.empty) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const user = result.rows[0];
-
-    // Verify password
-    const isValid = await comparePassword(password, user.password_hash);
+    const doc = q.docs[0];
+    const data = doc.data();
+    const isValid = await comparePassword(password, data.password_hash as string);
     if (!isValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate token
     const token = generateToken({
-      email: user.email,
-      id: user.id,
-      full_name: user.full_name,
+      email: emailNorm,
+      id: doc.id,
+      full_name: data.full_name as string,
     });
 
     res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role,
-        default_currency: user.default_currency,
-        notification_settings: user.notification_settings,
-        created_date: user.created_date,
-        updated_date: user.updated_date,
-      },
+      user: userPublicFields(data, doc.id),
       token,
     });
   } catch (error: any) {
@@ -173,50 +113,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Get current user
 router.get('/me', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const result = await sql`
-      SELECT id, email, full_name, role, last_exchange_rate, default_currency, notification_settings, created_date, updated_date
-      FROM users
-      WHERE email = ${req.user!.email}
-    `;
-
-    if (result.rows.length === 0) {
+    const db = getFirestoreDb();
+    const doc = await db.collection(USERS).doc(req.user!.id).get();
+    if (!doc.exists) {
       return res.status(404).json({ error: 'User not found' });
     }
-
-    const user = result.rows[0];
-    res.json({
-      id: user.id,
-      email: user.email,
-      full_name: user.full_name,
-      role: user.role,
-      last_exchange_rate: user.last_exchange_rate,
-      default_currency: user.default_currency,
-      notification_settings: user.notification_settings,
-      created_date: user.created_date,
-      updated_date: user.updated_date,
-    });
+    const data = doc.data()!;
+    res.json(userPublicFields(data, doc.id));
   } catch (error: any) {
     console.error('Get user error:', error);
     res.status(500).json({ error: error.message || 'Failed to get user' });
   }
 });
 
-// Update current user
 router.patch('/me', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const updates: any = {};
     const allowedFields = ['full_name', 'default_currency', 'notification_settings', 'last_exchange_rate'];
+    const updates: Record<string, unknown> = {};
 
     for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
-        if (field === 'notification_settings') {
-          updates[field] = req.body[field];
-        } else {
-          updates[field] = req.body[field];
-        }
+        updates[field] = req.body[field];
       }
     }
 
@@ -224,74 +143,29 @@ router.patch('/me', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
-    // Build update query using pg directly for parameterized queries
-    const { Pool } = await import('pg');
-    const pool = new Pool({
-      connectionString: process.env.POSTGRES_URL,
+    const db = getFirestoreDb();
+    const ref = db.collection(USERS).doc(req.user!.id);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    await ref.update({
+      ...updates,
+      updated_date: FieldValue.serverTimestamp(),
     });
 
-    try {
-      const updateFields: string[] = [];
-      const values: any[] = [];
-      let paramIndex = 1;
-
-      for (const field of allowedFields) {
-        if (updates[field] !== undefined) {
-          if (field === 'notification_settings') {
-            updateFields.push(`${field} = $${paramIndex}::jsonb`);
-            values.push(JSON.stringify(updates[field]));
-          } else {
-            updateFields.push(`${field} = $${paramIndex}`);
-            values.push(updates[field]);
-          }
-          paramIndex++;
-        }
-      }
-
-      if (updateFields.length === 0) {
-        return res.status(400).json({ error: 'No valid fields to update' });
-      }
-
-      values.push(req.user!.email);
-
-      const query = `
-        UPDATE users
-        SET ${updateFields.join(', ')}, updated_date = CURRENT_TIMESTAMP
-        WHERE email = $${paramIndex}
-        RETURNING id, email, full_name, role, last_exchange_rate, default_currency, notification_settings, created_date, updated_date
-      `;
-
-      const result = await pool.query(query, values);
-
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      const user = result.rows[0];
-      res.json({
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name,
-        role: user.role,
-        last_exchange_rate: user.last_exchange_rate,
-        default_currency: user.default_currency,
-        notification_settings: user.notification_settings,
-        created_date: user.created_date,
-        updated_date: user.updated_date,
-      });
-    } finally {
-      await pool.end();
-    }
+    const after = await ref.get();
+    const data = after.data()!;
+    res.json(userPublicFields(data, after.id));
   } catch (error: any) {
     console.error('Update user error:', error);
     res.status(500).json({ error: error.message || 'Failed to update user' });
   }
 });
 
-// Logout (client-side token removal, but we can track it if needed)
 router.post('/logout', authenticateToken, (req: AuthRequest, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
 export default router;
-

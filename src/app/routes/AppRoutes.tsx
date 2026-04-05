@@ -69,7 +69,11 @@ function AuthRouteWrapper({ children }: { children: React.ReactNode }) {
     return <SafeRedirect to="/" />;
   }
 
-  return <>{children}</>;
+  // Required for React.lazy Login/Register: without Suspense, navigation triggers error #426
+  // ("A component suspended while responding to synchronous input").
+  return (
+    <Suspense fallback={<LoadingSpinner size="lg" className="min-h-screen" />}>{children}</Suspense>
+  );
 }
 
 function AppRoutes() {

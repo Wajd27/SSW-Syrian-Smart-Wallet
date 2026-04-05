@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initDatabase } from './db/connection.js';
+import { initFirebase } from './db/firebase.js';
 import authRoutes from './routes/auth.js';
 import entityRoutes from './routes/entities.js';
 import fileRoutes from './routes/files.js';
@@ -10,13 +10,19 @@ dotenv.config();
 
 const app = express();
 
-// Middleware
-// CORS configuration - allow both production and preview deployments
+// Middleware — CORS (comma-separated CORS_ORIGIN in .env)
+const extraOrigins =
+  process.env.CORS_ORIGIN?.split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean) ?? [];
+
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,
+  ...extraOrigins,
   'https://ssw-syrian-smart-wallet.vercel.app',
   'http://localhost:3000',
-].filter(Boolean).map(origin => origin?.replace(/\/+$/, '')); // Remove trailing slashes
+  'http://127.0.0.1:3000',
+  // Firebase Hosting (same project as .firebaserc)
+  'https://syriansmartwallet.web.app',
+  'https://syriansmartwallet.firebaseapp.com',
+].filter(Boolean);
 
 app.use(cors({
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
@@ -70,13 +76,12 @@ app.get('/health', (req: express.Request, res: express.Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Debug middleware to log all requests (before routes)
-app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  console.log('Request URL:', req.url);
-  console.log('Request Original URL:', req.originalUrl);
-  next();
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+  });
+}
 
 // Test route to verify routing works
 app.get('/api/test', (req: express.Request, res: express.Response) => {
@@ -88,9 +93,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/entities', entityRoutes);
 app.use('/api/files', fileRoutes);
 
-// 404 handler
 app.use((req: express.Request, res: express.Response) => {
-  console.log('404 - Route not found:', req.method, req.path);
   res.status(404).json({ error: 'Route not found', path: req.path, method: req.method });
 });
 
@@ -103,11 +106,19 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
-// Initialize database (non-blocking for serverless)
-initDatabase().catch((error) => {
-  console.error('Database initialization error:', error);
-  // Don't exit in serverless - let it retry on next invocation
-});
+try {
+  initFirebase();
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+}
+
+// Local / Node: listen on PORT. On Vercel, VERCEL=1 and the platform invokes the app without binding.
+if (process.env.VERCEL !== '1') {
+  const port = Number(process.env.PORT) || 3001;
+  app.listen(port, () => {
+    console.log(`Wallet Management API listening on http://localhost:${port}`);
+  });
+}
 
 // For Vercel serverless functions, export the app as handler
 // @vercel/node will automatically wrap this Express app

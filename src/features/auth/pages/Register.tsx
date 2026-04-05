@@ -66,6 +66,7 @@ function Register() {
                 id="fullName"
                 name="fullName"
                 type="text"
+                autoComplete="name"
                 required
                 className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.fullName}
@@ -80,6 +81,7 @@ function Register() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.email}
@@ -94,6 +96,7 @@ function Register() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 required
                 className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.password}
@@ -108,6 +111,7 @@ function Register() {
                 id="confirmPassword"
                 name="confirmPassword"
                 type="password"
+                autoComplete="new-password"
                 required
                 className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={formData.confirmPassword}

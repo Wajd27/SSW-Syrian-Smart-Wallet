@@ -1,1006 +1,698 @@
 import express from 'express';
-import { sql } from '../db/connection.js';
+import type { Firestore } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
+import { getFirestoreDb } from '../db/firebase.js';
+import { docToRow } from '../utils/firestore-serializers.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
-import { updateEntity } from '../utils/sql-helpers.js';
 
 const router = express.Router();
-
-// Apply authentication to all entity routes
 router.use(authenticateToken);
 
-// Helper function to get pg Pool for dynamic queries
-// Use the shared pool from connection.ts instead of creating a new one
-async function getPool() {
-  const { getPool: getSharedPool } = await import('../db/connection.js');
-  return getSharedPool();
+const COL = {
+  wallets: 'wallets',
+  transactions: 'transactions',
+  recurring: 'recurring_transactions',
+  budgets: 'budgets',
+  savings: 'savings_goals',
+  investments: 'investments',
+  debts: 'debts',
+  family: 'family_members',
+  exchange: 'exchange_rates',
+  notifications: 'notifications',
+  ai: 'ai_recommendations',
+} as const;
+
+async function updateOwnedDoc(
+  collection: string,
+  id: string,
+  body: Record<string, unknown>,
+  allowedFields: string[],
+  ownerField: string,
+  ownerValue: string
+): Promise<Record<string, unknown> | null | 'no_fields'> {
+  const db = getFirestoreDb();
+  const ref = db.collection(collection).doc(id);
+  const snap = await ref.get();
+  if (!snap.exists) return null;
+  const data = snap.data()!;
+  if (data[ownerField] !== ownerValue) return null;
+
+  const patch: Record<string, unknown> = { updated_date: Timestamp.now() };
+  for (const f of allowedFields) {
+    if (body[f] !== undefined) patch[f] = body[f];
+  }
+  const keys = Object.keys(patch).filter((k) => k !== 'updated_date');
+  if (keys.length === 0) return 'no_fields';
+  await ref.update(patch);
+  const after = await ref.get();
+  return docToRow(after);
 }
 
-// Wallet routes
+async function walletOwned(db: Firestore, walletId: string, ownerEmail: string) {
+  const w = await db.collection(COL.wallets).doc(walletId).get();
+  if (!w.exists) return null;
+  const d = w.data()!;
+  if (d.owner_email !== ownerEmail) return null;
+  return w;
+}
+
+// --- Wallets ---
 router.get('/wallet', async (req: AuthRequest, res) => {
-  let result;
-  if (req.query.is_active !== undefined && req.query.currency) {
-    result = await sql`
-      SELECT * FROM wallets
-      WHERE owner_email = ${req.user!.email}
-      AND is_active = ${req.query.is_active === 'true'}
-      AND currency = ${req.query.currency as string}
-    `;
-  } else if (req.query.is_active !== undefined) {
-    result = await sql`
-      SELECT * FROM wallets
-      WHERE owner_email = ${req.user!.email}
-      AND is_active = ${req.query.is_active === 'true'}
-    `;
-  } else if (req.query.currency) {
-    result = await sql`
-      SELECT * FROM wallets
-      WHERE owner_email = ${req.user!.email}
-      AND currency = ${req.query.currency as string}
-    `;
-  } else {
-    result = await sql`
-      SELECT * FROM wallets
-      WHERE owner_email = ${req.user!.email}
-    `;
+  const db = getFirestoreDb();
+  const email = req.user!.email;
+  const snap = await db.collection(COL.wallets).where('owner_email', '==', email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as Record<string, unknown>[];
+  if (req.query.is_active !== undefined) {
+    const want = req.query.is_active === 'true';
+    rows = rows.filter((r) => r.is_active === want);
   }
-  res.json(result.rows);
+  if (req.query.currency) {
+    rows = rows.filter((r) => r.currency === req.query.currency);
+  }
+  res.json(rows);
 });
 
 router.get('/wallet/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    SELECT * FROM wallets
-    WHERE id = ${req.params.id} AND owner_email = ${req.user!.email}
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const doc = await db.collection(COL.wallets).doc(req.params.id).get();
+  if (!doc.exists || doc.data()!.owner_email !== req.user!.email) {
     return res.status(404).json({ error: 'Wallet not found' });
   }
-  res.json(result.rows[0]);
+  res.json(docToRow(doc));
 });
 
 router.post('/wallet', async (req: AuthRequest, res) => {
   const { name, type, currency, initial_balance, is_active } = req.body;
-  const result = await sql`
-    INSERT INTO wallets (name, type, currency, initial_balance, owner_email, is_active)
-    VALUES (${name}, ${type}, ${currency}, ${initial_balance}, ${req.user!.email}, ${is_active ?? true})
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.wallets).doc();
+  await ref.set({
+    name,
+    type,
+    currency,
+    initial_balance,
+    owner_email: req.user!.email,
+    is_active: is_active ?? true,
+    created_date: now,
+    updated_date: now,
+  });
+  const snap = await ref.get();
+  res.status(201).json(docToRow(snap));
 });
 
 router.patch('/wallet/:id', async (req: AuthRequest, res) => {
-  try {
-    const updates = req.body;
-    const allowedFields = ['name', 'type', 'currency', 'initial_balance', 'is_active'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const result = await updateEntity('wallets', req.params.id, filteredUpdates, 'owner_email', req.user!.email);
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'Wallet not found' });
-    }
-    res.json(result[0]);
-  } catch (error: any) {
-    console.error('Update wallet error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update wallet' });
-  }
+  const allowed = ['name', 'type', 'currency', 'initial_balance', 'is_active'];
+  const updated = await updateOwnedDoc(COL.wallets, req.params.id, req.body, allowed, 'owner_email', req.user!.email);
+  if (updated === 'no_fields') return res.status(400).json({ error: 'No valid fields to update' });
+  if (!updated) return res.status(404).json({ error: 'Wallet not found' });
+  res.json(updated);
 });
 
 router.delete('/wallet/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM wallets
-    WHERE id = ${req.params.id} AND owner_email = ${req.user!.email}
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.wallets).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.owner_email !== req.user!.email) {
     return res.status(404).json({ error: 'Wallet not found' });
   }
+  await ref.delete();
   res.json({ message: 'Wallet deleted successfully' });
 });
 
-// Transaction routes
+function filterTx(rows: any[], q: express.Request) {
+  let out = rows;
+  if (q.query.wallet_id) out = out.filter((r) => r.wallet_id === q.query.wallet_id);
+  if (q.query.type) out = out.filter((r) => r.type === q.query.type);
+  if (q.query.category) out = out.filter((r) => r.category === q.query.category);
+  const start = q.query.start_date;
+  if (start) out = out.filter((r) => r.transaction_date >= String(start));
+  const end = q.query.end_date;
+  if (end) out = out.filter((r) => r.transaction_date <= String(end));
+  return out;
+}
+
 router.get('/transaction', async (req: AuthRequest, res) => {
-  const conditions: string[] = [];
-  const values: any[] = [req.user!.email];
-  let paramIndex = 2;
-
-  if (req.query.wallet_id) {
-    conditions.push(`t.wallet_id = $${paramIndex}`);
-    values.push(req.query.wallet_id as string);
-    paramIndex++;
-  }
-  if (req.query.type) {
-    conditions.push(`t.type = $${paramIndex}`);
-    values.push(req.query.type as string);
-    paramIndex++;
-  }
-  if (req.query.category) {
-    conditions.push(`t.category = $${paramIndex}`);
-    values.push(req.query.category as string);
-    paramIndex++;
-  }
-  if (req.query.start_date) {
-    conditions.push(`t.transaction_date >= $${paramIndex}`);
-    values.push(req.query.start_date as string);
-    paramIndex++;
-  }
-  if (req.query.end_date) {
-    conditions.push(`t.transaction_date <= $${paramIndex}`);
-    values.push(req.query.end_date as string);
-    paramIndex++;
-  }
-
-  const whereClause = conditions.length > 0 
-    ? `WHERE w.owner_email = $1 AND ${conditions.join(' AND ')}`
-    : `WHERE w.owner_email = $1`;
-
   try {
-    const pool = await getPool();
-    const result = await pool.query(
-      `SELECT t.* FROM transactions t
-       INNER JOIN wallets w ON t.wallet_id = w.id
-       ${whereClause}`,
-      values
-    );
-    res.json(result.rows);
+    const db = getFirestoreDb();
+    const snap = await db.collection(COL.transactions).where('owner_email', '==', req.user!.email).get();
+    let rows = snap.docs.map((d) => docToRow(d));
+    rows = filterTx(rows as any[], req);
+    res.json(rows);
   } catch (error: any) {
     console.error('Error fetching transactions:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch transactions', 
-      message: error.message || 'Database error' 
-    });
+    res.status(500).json({ error: 'Failed to fetch transactions', message: error.message });
   }
 });
 
 router.get('/transaction/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    SELECT t.* FROM transactions t
-    INNER JOIN wallets w ON t.wallet_id = w.id
-    WHERE t.id = ${req.params.id} AND w.owner_email = ${req.user!.email}
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const doc = await db.collection(COL.transactions).doc(req.params.id).get();
+  if (!doc.exists || doc.data()!.owner_email !== req.user!.email) {
     return res.status(404).json({ error: 'Transaction not found' });
   }
-  res.json(result.rows[0]);
+  res.json(docToRow(doc));
 });
 
 router.post('/transaction', async (req: AuthRequest, res) => {
   const data = req.body;
-  // Verify wallet ownership
-  const walletCheck = await sql`
-    SELECT id FROM wallets WHERE id = ${data.wallet_id} AND owner_email = ${req.user!.email}
-  `;
-  if (walletCheck.rows.length === 0) {
-    return res.status(403).json({ error: 'Wallet not found or access denied' });
-  }
+  const db = getFirestoreDb();
+  const w = await walletOwned(db, data.wallet_id, req.user!.email);
+  if (!w) return res.status(403).json({ error: 'Wallet not found or access denied' });
 
-  const result = await sql`
-    INSERT INTO transactions (
-      wallet_id, title, amount_syp, amount_usd, exchange_rate, primary_currency,
-      type, category, family_member_id, transaction_date, notes, receipt_uri
-    )
-    VALUES (
-      ${data.wallet_id}, ${data.title}, ${data.amount_syp}, ${data.amount_usd},
-      ${data.exchange_rate}, ${data.primary_currency}, ${data.type}, ${data.category || null},
-      ${data.family_member_id || null}, ${data.transaction_date}, ${data.notes || null},
-      ${data.receipt_uri || null}
-    )
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const now = Timestamp.now();
+  const ref = db.collection(COL.transactions).doc();
+  await ref.set({
+    wallet_id: data.wallet_id,
+    title: data.title,
+    amount_syp: data.amount_syp,
+    amount_usd: data.amount_usd,
+    exchange_rate: data.exchange_rate,
+    primary_currency: data.primary_currency,
+    type: data.type,
+    category: data.category || null,
+    family_member_id: data.family_member_id || null,
+    transaction_date: data.transaction_date,
+    notes: data.notes || null,
+    receipt_uri: data.receipt_uri || null,
+    owner_email: req.user!.email,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/transaction/:id', async (req: AuthRequest, res) => {
   try {
-    const updates = req.body;
-    const allowedFields = ['title', 'amount_syp', 'amount_usd', 'exchange_rate', 'primary_currency', 'type', 'category', 'family_member_id', 'transaction_date', 'notes', 'receipt_uri'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    // Build SET clause with parameterized values
-    const setParts: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    for (const [field, value] of Object.entries(filteredUpdates)) {
-      if (value === null) {
-        setParts.push(`${field} = NULL`);
-      } else {
-        setParts.push(`${field} = $${paramIndex}`);
-        values.push(value);
-        paramIndex++;
-      }
-    }
-    setParts.push(`updated_date = CURRENT_TIMESTAMP`);
-
-    // Add WHERE clause parameters
-    values.push(req.params.id);
-    values.push(req.user!.email);
-
-    const query = `
-      UPDATE transactions
-      SET ${setParts.join(', ')}
-      WHERE id = $${paramIndex}
-      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = $${paramIndex + 1})
-      RETURNING *
-    `;
-
-    const pool = await getPool();
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
+    const allowed = [
+      'title', 'amount_syp', 'amount_usd', 'exchange_rate', 'primary_currency', 'type', 'category',
+      'family_member_id', 'transaction_date', 'notes', 'receipt_uri',
+    ];
+    const db = getFirestoreDb();
+    const ref = db.collection(COL.transactions).doc(req.params.id);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()!.owner_email !== req.user!.email) {
       return res.status(404).json({ error: 'Transaction not found' });
     }
-    res.json(result.rows[0]);
+    const patch: Record<string, unknown> = { updated_date: Timestamp.now() };
+    for (const f of allowed) {
+      if (req.body[f] !== undefined) patch[f] = req.body[f];
+    }
+    if (Object.keys(patch).length === 1) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    await ref.update(patch);
+    res.json(docToRow(await ref.get()));
   } catch (error: any) {
     console.error('Error updating transaction:', error);
-    res.status(500).json({ 
-      error: 'Failed to update transaction', 
-      message: error.message || 'Database error' 
-    });
+    res.status(500).json({ error: 'Failed to update transaction', message: error.message });
   }
 });
 
 router.delete('/transaction/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM transactions
-    WHERE id = ${req.params.id}
-    AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = ${req.user!.email})
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.transactions).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.owner_email !== req.user!.email) {
     return res.status(404).json({ error: 'Transaction not found' });
   }
+  await ref.delete();
   res.json({ message: 'Transaction deleted successfully' });
 });
 
-// Add similar routes for other entities...
-// For brevity, I'll create a helper function approach for the remaining entities
-
-// Recurring Transaction routes
+// --- Recurring ---
 router.get('/recurring-transaction', async (req: AuthRequest, res) => {
-  let result;
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.recurring).where('wallet_owner', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as Record<string, unknown>[];
   if (req.query.is_active !== undefined) {
-    result = await sql`
-      SELECT * FROM recurring_transactions
-      WHERE wallet_owner = ${req.user!.email}
-      AND is_active = ${req.query.is_active === 'true'}
-    `;
-  } else {
-    result = await sql`
-      SELECT * FROM recurring_transactions
-      WHERE wallet_owner = ${req.user!.email}
-    `;
+    const want = req.query.is_active === 'true';
+    rows = rows.filter((r) => r.is_active === want);
   }
-  res.json(result.rows);
+  res.json(rows);
 });
 
 router.post('/recurring-transaction', async (req: AuthRequest, res) => {
   const data = { ...req.body, wallet_owner: req.user!.email };
-  const result = await sql`
-    INSERT INTO recurring_transactions (
-      wallet_id, title, amount_syp, amount_usd, exchange_rate, primary_currency,
-      type, category, frequency, next_occurrence, is_active, family_member_id, wallet_owner
-    )
-    VALUES (
-      ${data.wallet_id}, ${data.title}, ${data.amount_syp}, ${data.amount_usd},
-      ${data.exchange_rate}, ${data.primary_currency}, ${data.type}, ${data.category || null},
-      ${data.frequency}, ${data.next_occurrence}, ${data.is_active ?? true},
-      ${data.family_member_id || null}, ${data.wallet_owner}
-    )
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.recurring).doc();
+  await ref.set({
+    wallet_id: data.wallet_id,
+    title: data.title,
+    amount_syp: data.amount_syp,
+    amount_usd: data.amount_usd,
+    exchange_rate: data.exchange_rate,
+    primary_currency: data.primary_currency,
+    type: data.type,
+    category: data.category || null,
+    frequency: data.frequency,
+    next_occurrence: data.next_occurrence,
+    is_active: data.is_active ?? true,
+    family_member_id: data.family_member_id || null,
+    wallet_owner: data.wallet_owner,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/recurring-transaction/:id', async (req: AuthRequest, res) => {
-  try {
-    const updates = req.body;
-    const allowedFields = ['title', 'amount_syp', 'amount_usd', 'exchange_rate', 'primary_currency', 'type', 'category', 'frequency', 'next_occurrence', 'is_active', 'family_member_id'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const result = await updateEntity('recurring_transactions', req.params.id, filteredUpdates, 'wallet_owner', req.user!.email);
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'Recurring transaction not found' });
-    }
-    res.json(result[0]);
-  } catch (error: any) {
-    console.error('Update recurring transaction error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update recurring transaction' });
-  }
+  const allowed = [
+    'title', 'amount_syp', 'amount_usd', 'exchange_rate', 'primary_currency', 'type', 'category',
+    'frequency', 'next_occurrence', 'is_active', 'family_member_id',
+  ];
+  const updated = await updateOwnedDoc(COL.recurring, req.params.id, req.body, allowed, 'wallet_owner', req.user!.email);
+  if (updated === 'no_fields') return res.status(400).json({ error: 'No valid fields to update' });
+  if (!updated) return res.status(404).json({ error: 'Recurring transaction not found' });
+  res.json(updated);
 });
 
 router.delete('/recurring-transaction/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM recurring_transactions
-    WHERE id = ${req.params.id} AND wallet_owner = ${req.user!.email}
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.recurring).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.wallet_owner !== req.user!.email) {
     return res.status(404).json({ error: 'Recurring transaction not found' });
   }
+  await ref.delete();
   res.json({ message: 'Recurring transaction deleted successfully' });
 });
 
-// Budget routes
+// --- Budgets ---
 router.get('/budget', async (req: AuthRequest, res) => {
-  let result;
-  if (req.query.month && req.query.category) {
-    result = await sql`
-      SELECT b.* FROM budgets b
-      INNER JOIN wallets w ON b.wallet_id = w.id
-      WHERE w.owner_email = ${req.user!.email}
-      AND b.month = ${req.query.month as string}
-      AND b.category = ${req.query.category as string}
-    `;
-  } else if (req.query.month) {
-    result = await sql`
-      SELECT b.* FROM budgets b
-      INNER JOIN wallets w ON b.wallet_id = w.id
-      WHERE w.owner_email = ${req.user!.email}
-      AND b.month = ${req.query.month as string}
-    `;
-  } else if (req.query.category) {
-    result = await sql`
-      SELECT b.* FROM budgets b
-      INNER JOIN wallets w ON b.wallet_id = w.id
-      WHERE w.owner_email = ${req.user!.email}
-      AND b.category = ${req.query.category as string}
-    `;
-  } else {
-    result = await sql`
-      SELECT b.* FROM budgets b
-      INNER JOIN wallets w ON b.wallet_id = w.id
-      WHERE w.owner_email = ${req.user!.email}
-    `;
-  }
-  res.json(result.rows);
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.budgets).where('owner_email', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as any[];
+  if (req.query.month) rows = rows.filter((r) => r.month === req.query.month);
+  if (req.query.category) rows = rows.filter((r) => r.category === req.query.category);
+  res.json(rows);
 });
 
 router.post('/budget', async (req: AuthRequest, res) => {
   const data = req.body;
-  // Verify wallet ownership
-  const walletCheck = await sql`
-    SELECT id FROM wallets WHERE id = ${data.wallet_id} AND owner_email = ${req.user!.email}
-  `;
-  if (walletCheck.rows.length === 0) {
-    return res.status(403).json({ error: 'Wallet not found or access denied' });
-  }
+  const db = getFirestoreDb();
+  const w = await walletOwned(db, data.wallet_id, req.user!.email);
+  if (!w) return res.status(403).json({ error: 'Wallet not found or access denied' });
 
-  const result = await sql`
-    INSERT INTO budgets (wallet_id, category, amount, month, family_member_id)
-    VALUES (${data.wallet_id}, ${data.category}, ${data.amount}, ${data.month}, ${data.family_member_id || null})
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const now = Timestamp.now();
+  const ref = db.collection(COL.budgets).doc();
+  await ref.set({
+    wallet_id: data.wallet_id,
+    category: data.category,
+    amount: data.amount,
+    month: data.month,
+    family_member_id: data.family_member_id || null,
+    owner_email: req.user!.email,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/budget/:id', async (req: AuthRequest, res) => {
   try {
-    const updates = req.body;
-    const allowedFields = ['category', 'amount', 'month', 'family_member_id'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    // Build query with subquery for wallet ownership
-    const setParts: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    for (const [field, value] of Object.entries(filteredUpdates)) {
-      setParts.push(`${field} = $${paramIndex}`);
-      values.push(value);
-      paramIndex++;
-    }
-    setParts.push(`updated_date = CURRENT_TIMESTAMP`);
-
-    // Add WHERE clause parameters
-    values.push(req.params.id);
-    values.push(req.user!.email);
-
-    const query = `
-      UPDATE budgets
-      SET ${setParts.join(', ')}
-      WHERE id = $${paramIndex}
-      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = $${paramIndex + 1})
-      RETURNING *
-    `;
-
-    const pool = await getPool();
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
+    const allowed = ['category', 'amount', 'month', 'family_member_id'];
+    const db = getFirestoreDb();
+    const ref = db.collection(COL.budgets).doc(req.params.id);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()!.owner_email !== req.user!.email) {
       return res.status(404).json({ error: 'Budget not found' });
     }
-    res.json(result.rows[0]);
+    const patch: Record<string, unknown> = { updated_date: Timestamp.now() };
+    for (const f of allowed) {
+      if (req.body[f] !== undefined) patch[f] = req.body[f];
+    }
+    if (Object.keys(patch).length === 1) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    await ref.update(patch);
+    res.json(docToRow(await ref.get()));
   } catch (error: any) {
     console.error('Error updating budget:', error);
-    res.status(500).json({ 
-      error: 'Failed to update budget', 
-      message: error.message || 'Database error' 
-    });
+    res.status(500).json({ error: 'Failed to update budget', message: error.message });
   }
 });
 
 router.delete('/budget/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM budgets
-    WHERE id = ${req.params.id}
-    AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = ${req.user!.email})
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.budgets).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.owner_email !== req.user!.email) {
     return res.status(404).json({ error: 'Budget not found' });
   }
+  await ref.delete();
   res.json({ message: 'Budget deleted successfully' });
 });
 
-// Savings Goal routes
+// --- Savings goals ---
 router.get('/savings-goal', async (req: AuthRequest, res) => {
-  let result;
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.savings).where('owner_email', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as Record<string, unknown>[];
   if (req.query.is_active !== undefined) {
-    result = await sql`
-      SELECT sg.* FROM savings_goals sg
-      INNER JOIN wallets w ON sg.wallet_id = w.id
-      WHERE w.owner_email = ${req.user!.email}
-      AND sg.is_active = ${req.query.is_active === 'true'}
-    `;
-  } else {
-    result = await sql`
-      SELECT sg.* FROM savings_goals sg
-      INNER JOIN wallets w ON sg.wallet_id = w.id
-      WHERE w.owner_email = ${req.user!.email}
-    `;
+    const want = req.query.is_active === 'true';
+    rows = rows.filter((r) => r.is_active === want);
   }
-  res.json(result.rows);
+  res.json(rows);
 });
 
 router.post('/savings-goal', async (req: AuthRequest, res) => {
   const data = req.body;
-  const walletCheck = await sql`
-    SELECT id FROM wallets WHERE id = ${data.wallet_id} AND owner_email = ${req.user!.email}
-  `;
-  if (walletCheck.rows.length === 0) {
-    return res.status(403).json({ error: 'Wallet not found or access denied' });
-  }
+  const db = getFirestoreDb();
+  const w = await walletOwned(db, data.wallet_id, req.user!.email);
+  if (!w) return res.status(403).json({ error: 'Wallet not found or access denied' });
 
-  const result = await sql`
-    INSERT INTO savings_goals (
-      wallet_id, title, target_amount, current_amount, target_date,
-      description, category, is_active
-    )
-    VALUES (
-      ${data.wallet_id}, ${data.title}, ${data.target_amount}, ${data.current_amount || 0},
-      ${data.target_date}, ${data.description || null}, ${data.category || null},
-      ${data.is_active ?? true}
-    )
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const now = Timestamp.now();
+  const ref = db.collection(COL.savings).doc();
+  await ref.set({
+    wallet_id: data.wallet_id,
+    title: data.title,
+    target_amount: data.target_amount,
+    current_amount: data.current_amount || 0,
+    target_date: data.target_date,
+    description: data.description || null,
+    category: data.category || null,
+    is_active: data.is_active ?? true,
+    owner_email: req.user!.email,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/savings-goal/:id', async (req: AuthRequest, res) => {
   try {
-    const updates = req.body;
-    const allowedFields = ['title', 'target_amount', 'current_amount', 'target_date', 'description', 'category', 'is_active'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const setParts: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
-
-    for (const [field, value] of Object.entries(filteredUpdates)) {
-      if (value === null) {
-        setParts.push(`${field} = NULL`);
-      } else {
-        setParts.push(`${field} = $${paramIndex}`);
-        values.push(value);
-        paramIndex++;
-      }
-    }
-    setParts.push(`updated_date = CURRENT_TIMESTAMP`);
-
-    // Add WHERE clause parameters
-    values.push(req.params.id);
-    values.push(req.user!.email);
-
-    const query = `
-      UPDATE savings_goals
-      SET ${setParts.join(', ')}
-      WHERE id = $${paramIndex}
-      AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = $${paramIndex + 1})
-      RETURNING *
-    `;
-
-    const pool = await getPool();
-    const result = await pool.query(query, values);
-    if (result.rows.length === 0) {
+    const allowed = ['title', 'target_amount', 'current_amount', 'target_date', 'description', 'category', 'is_active'];
+    const db = getFirestoreDb();
+    const ref = db.collection(COL.savings).doc(req.params.id);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data()!.owner_email !== req.user!.email) {
       return res.status(404).json({ error: 'Savings goal not found' });
     }
-    res.json(result.rows[0]);
+    const patch: Record<string, unknown> = { updated_date: Timestamp.now() };
+    for (const f of allowed) {
+      if (req.body[f] !== undefined) {
+        patch[f] = req.body[f] === null ? null : req.body[f];
+      }
+    }
+    if (Object.keys(patch).length === 1) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    await ref.update(patch);
+    res.json(docToRow(await ref.get()));
   } catch (error: any) {
     console.error('Error updating savings goal:', error);
-    res.status(500).json({ 
-      error: 'Failed to update savings goal', 
-      message: error.message || 'Database error' 
-    });
+    res.status(500).json({ error: 'Failed to update savings goal', message: error.message });
   }
 });
 
 router.delete('/savings-goal/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM savings_goals
-    WHERE id = ${req.params.id}
-    AND wallet_id IN (SELECT id FROM wallets WHERE owner_email = ${req.user!.email})
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.savings).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.owner_email !== req.user!.email) {
     return res.status(404).json({ error: 'Savings goal not found' });
   }
+  await ref.delete();
   res.json({ message: 'Savings goal deleted successfully' });
 });
 
-// Investment routes
+// --- Investments ---
 router.get('/investment', async (req: AuthRequest, res) => {
-  let result;
-  if (req.query.is_active !== undefined && req.query.savings_goal_id) {
-    result = await sql`
-      SELECT * FROM investments
-      WHERE wallet_owner = ${req.user!.email}
-      AND is_active = ${req.query.is_active === 'true'}
-      AND savings_goal_id = ${req.query.savings_goal_id as string}
-    `;
-  } else if (req.query.is_active !== undefined) {
-    result = await sql`
-      SELECT * FROM investments
-      WHERE wallet_owner = ${req.user!.email}
-      AND is_active = ${req.query.is_active === 'true'}
-    `;
-  } else if (req.query.savings_goal_id) {
-    result = await sql`
-      SELECT * FROM investments
-      WHERE wallet_owner = ${req.user!.email}
-      AND savings_goal_id = ${req.query.savings_goal_id as string}
-    `;
-  } else {
-    result = await sql`
-      SELECT * FROM investments
-      WHERE wallet_owner = ${req.user!.email}
-    `;
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.investments).where('wallet_owner', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as Record<string, unknown>[];
+  if (req.query.is_active !== undefined) {
+    const want = req.query.is_active === 'true';
+    rows = rows.filter((r) => r.is_active === want);
   }
-  res.json(result.rows);
+  if (req.query.savings_goal_id) {
+    rows = rows.filter((r) => r.savings_goal_id === req.query.savings_goal_id);
+  }
+  res.json(rows);
 });
 
 router.post('/investment', async (req: AuthRequest, res) => {
   const data = { ...req.body, wallet_owner: req.user!.email };
-  const result = await sql`
-    INSERT INTO investments (
-      wallet_owner, savings_goal_id, name, type, initial_amount, current_value,
-      currency, purchase_date, risk_level, expected_return, notes, is_active, history
-    )
-    VALUES (
-      ${data.wallet_owner}, ${data.savings_goal_id || null}, ${data.name}, ${data.type},
-      ${data.initial_amount}, ${data.current_value}, ${data.currency}, ${data.purchase_date},
-      ${data.risk_level || null}, ${data.expected_return || null}, ${data.notes || null},
-      ${data.is_active ?? true}, ${JSON.stringify(data.history || [])}::jsonb
-    )
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.investments).doc();
+  await ref.set({
+    wallet_owner: data.wallet_owner,
+    savings_goal_id: data.savings_goal_id || null,
+    name: data.name,
+    type: data.type,
+    initial_amount: data.initial_amount,
+    current_value: data.current_value,
+    currency: data.currency,
+    purchase_date: data.purchase_date,
+    risk_level: data.risk_level || null,
+    expected_return: data.expected_return || null,
+    notes: data.notes || null,
+    is_active: data.is_active ?? true,
+    history: data.history || [],
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/investment/:id', async (req: AuthRequest, res) => {
-  try {
-    const updates = req.body;
-    const allowedFields = ['name', 'type', 'initial_amount', 'current_value', 'currency', 'purchase_date', 'risk_level', 'expected_return', 'notes', 'is_active', 'savings_goal_id', 'history'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const result = await updateEntity('investments', req.params.id, filteredUpdates, 'wallet_owner', req.user!.email);
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'Investment not found' });
-    }
-    res.json(result[0]);
-  } catch (error: any) {
-    console.error('Update investment error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update investment' });
-  }
+  const allowed = [
+    'name', 'type', 'initial_amount', 'current_value', 'currency', 'purchase_date', 'risk_level',
+    'expected_return', 'notes', 'is_active', 'savings_goal_id', 'history',
+  ];
+  const updated = await updateOwnedDoc(COL.investments, req.params.id, req.body, allowed, 'wallet_owner', req.user!.email);
+  if (updated === 'no_fields') return res.status(400).json({ error: 'No valid fields to update' });
+  if (!updated) return res.status(404).json({ error: 'Investment not found' });
+  res.json(updated);
 });
 
 router.delete('/investment/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM investments
-    WHERE id = ${req.params.id} AND wallet_owner = ${req.user!.email}
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.investments).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.wallet_owner !== req.user!.email) {
     return res.status(404).json({ error: 'Investment not found' });
   }
+  await ref.delete();
   res.json({ message: 'Investment deleted successfully' });
 });
 
-// Debt routes
+// --- Debts ---
 router.get('/debt', async (req: AuthRequest, res) => {
-  let result;
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.debts).where('wallet_owner', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as Record<string, unknown>[];
   if (req.query.is_active !== undefined) {
-    result = await sql`
-      SELECT * FROM debts
-      WHERE wallet_owner = ${req.user!.email}
-      AND is_active = ${req.query.is_active === 'true'}
-    `;
-  } else {
-    result = await sql`
-      SELECT * FROM debts
-      WHERE wallet_owner = ${req.user!.email}
-    `;
+    const want = req.query.is_active === 'true';
+    rows = rows.filter((r) => r.is_active === want);
   }
-  res.json(result.rows);
+  res.json(rows);
 });
 
 router.post('/debt', async (req: AuthRequest, res) => {
   const data = { ...req.body, wallet_owner: req.user!.email };
-  const result = await sql`
-    INSERT INTO debts (
-      wallet_owner, name, type, original_amount, current_balance, minimum_payment,
-      interest_rate, due_date, creditor, currency, is_active
-    )
-    VALUES (
-      ${data.wallet_owner}, ${data.name}, ${data.type}, ${data.original_amount},
-      ${data.current_balance}, ${data.minimum_payment}, ${data.interest_rate || 0},
-      ${data.due_date || null}, ${data.creditor || null}, ${data.currency || 'SYP'}, ${data.is_active ?? true}
-    )
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.debts).doc();
+  await ref.set({
+    wallet_owner: data.wallet_owner,
+    name: data.name,
+    type: data.type,
+    original_amount: data.original_amount,
+    current_balance: data.current_balance,
+    minimum_payment: data.minimum_payment,
+    interest_rate: data.interest_rate || 0,
+    due_date: data.due_date || null,
+    creditor: data.creditor || null,
+    currency: data.currency || 'SYP',
+    is_active: data.is_active ?? true,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/debt/:id', async (req: AuthRequest, res) => {
-  try {
-    const updates = req.body;
-    const allowedFields = ['name', 'type', 'original_amount', 'current_balance', 'minimum_payment', 'interest_rate', 'due_date', 'creditor', 'currency', 'is_active'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        // Skip currency if column doesn't exist (will be added via migration)
-        if (field === 'currency') {
-          // Try to check if column exists, if not skip it
-          try {
-            filteredUpdates[field] = updates[field];
-          } catch {
-            // Column doesn't exist, skip it
-            continue;
-          }
-        } else {
-          filteredUpdates[field] = updates[field];
-        }
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const result = await updateEntity('debts', req.params.id, filteredUpdates, 'wallet_owner', req.user!.email);
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'Debt not found' });
-    }
-    res.json(result[0]);
-  } catch (error: any) {
-    console.error('Update debt error:', error);
-    // If error is about currency column, try without it
-    if (error.message?.includes('currency') && updates.currency !== undefined) {
-      const updatesWithoutCurrency = { ...updates };
-      delete updatesWithoutCurrency.currency;
-      const allowedFields = ['name', 'type', 'original_amount', 'current_balance', 'minimum_payment', 'interest_rate', 'due_date', 'creditor', 'is_active'];
-      const filteredUpdates: Record<string, any> = {};
-      
-      for (const field of allowedFields) {
-        if (updatesWithoutCurrency[field] !== undefined) {
-          filteredUpdates[field] = updatesWithoutCurrency[field];
-        }
-      }
-
-      if (Object.keys(filteredUpdates).length > 0) {
-        try {
-          const result = await updateEntity('debts', req.params.id, filteredUpdates, 'wallet_owner', req.user!.email);
-          if (result.length > 0) {
-            return res.json(result[0]);
-          }
-        } catch (retryError: any) {
-          return res.status(500).json({ error: retryError.message || 'Failed to update debt' });
-        }
-      }
-    }
-    res.status(500).json({ error: error.message || 'Failed to update debt' });
-  }
+  const allowed = [
+    'name', 'type', 'original_amount', 'current_balance', 'minimum_payment', 'interest_rate',
+    'due_date', 'creditor', 'currency', 'is_active',
+  ];
+  const updated = await updateOwnedDoc(COL.debts, req.params.id, req.body, allowed, 'wallet_owner', req.user!.email);
+  if (updated === 'no_fields') return res.status(400).json({ error: 'No valid fields to update' });
+  if (!updated) return res.status(404).json({ error: 'Debt not found' });
+  res.json(updated);
 });
 
 router.delete('/debt/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM debts
-    WHERE id = ${req.params.id} AND wallet_owner = ${req.user!.email}
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.debts).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.wallet_owner !== req.user!.email) {
     return res.status(404).json({ error: 'Debt not found' });
   }
+  await ref.delete();
   res.json({ message: 'Debt deleted successfully' });
 });
 
-// Family Member routes
+// --- Family ---
 router.get('/family-member', async (req: AuthRequest, res) => {
-  let result;
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.family).where('added_by', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as Record<string, unknown>[];
   if (req.query.is_active !== undefined) {
-    result = await sql`
-      SELECT * FROM family_members
-      WHERE added_by = ${req.user!.email}
-      AND is_active = ${req.query.is_active === 'true'}
-    `;
-  } else {
-    result = await sql`
-      SELECT * FROM family_members
-      WHERE added_by = ${req.user!.email}
-    `;
+    const want = req.query.is_active === 'true';
+    rows = rows.filter((r) => r.is_active === want);
   }
-  res.json(result.rows);
+  res.json(rows);
 });
 
 router.post('/family-member', async (req: AuthRequest, res) => {
   const data = { ...req.body, added_by: req.user!.email };
-  const result = await sql`
-    INSERT INTO family_members (name, relationship, date_of_birth, spending_limit, spending_limit_currency, is_active, added_by)
-    VALUES (${data.name}, ${data.relationship || null}, ${data.date_of_birth || null}, ${data.spending_limit || null}, ${data.spending_limit_currency || 'SYP'}, ${data.is_active ?? true}, ${data.added_by})
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.family).doc();
+  await ref.set({
+    name: data.name,
+    relationship: data.relationship || null,
+    date_of_birth: data.date_of_birth || null,
+    spending_limit: data.spending_limit || null,
+    spending_limit_currency: data.spending_limit_currency || 'SYP',
+    is_active: data.is_active ?? true,
+    added_by: data.added_by,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/family-member/:id', async (req: AuthRequest, res) => {
-  try {
-    const updates = req.body;
-    const allowedFields = ['name', 'relationship', 'date_of_birth', 'spending_limit', 'spending_limit_currency', 'is_active'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const result = await updateEntity('family_members', req.params.id, filteredUpdates, 'added_by', req.user!.email);
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'Family member not found' });
-    }
-    res.json(result[0]);
-  } catch (error: any) {
-    console.error('Update family member error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update family member' });
-  }
+  const allowed = ['name', 'relationship', 'date_of_birth', 'spending_limit', 'spending_limit_currency', 'is_active'];
+  const updated = await updateOwnedDoc(COL.family, req.params.id, req.body, allowed, 'added_by', req.user!.email);
+  if (updated === 'no_fields') return res.status(400).json({ error: 'No valid fields to update' });
+  if (!updated) return res.status(404).json({ error: 'Family member not found' });
+  res.json(updated);
 });
 
 router.delete('/family-member/:id', async (req: AuthRequest, res) => {
-  const result = await sql`
-    DELETE FROM family_members
-    WHERE id = ${req.params.id} AND added_by = ${req.user!.email}
-    RETURNING *
-  `;
-  if (result.rows.length === 0) {
+  const db = getFirestoreDb();
+  const ref = db.collection(COL.family).doc(req.params.id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()!.added_by !== req.user!.email) {
     return res.status(404).json({ error: 'Family member not found' });
   }
+  await ref.delete();
   res.json({ message: 'Family member deleted successfully' });
 });
 
-// Exchange Rate routes
+// --- Exchange rates (global) ---
 router.get('/exchange-rate', async (req: AuthRequest, res) => {
-  let result;
-  if (req.query.limit) {
-    result = await sql`
-      SELECT * FROM exchange_rates
-      ORDER BY date DESC
-      LIMIT ${parseInt(req.query.limit as string)}
-    `;
-  } else {
-    result = await sql`
-      SELECT * FROM exchange_rates
-      ORDER BY date DESC
-    `;
+  const db = getFirestoreDb();
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+  let q = db.collection(COL.exchange).orderBy('date', 'desc');
+  if (limit && !Number.isNaN(limit)) {
+    q = q.limit(limit);
   }
-  res.json(result.rows);
+  const snap = await q.get();
+  res.json(snap.docs.map((d) => docToRow(d)));
 });
 
 router.post('/exchange-rate', async (req: AuthRequest, res) => {
   const data = req.body;
-  const result = await sql`
-    INSERT INTO exchange_rates (rate, source, date)
-    VALUES (${data.rate}, ${data.source}, ${data.date})
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.exchange).doc();
+  await ref.set({
+    rate: data.rate,
+    source: data.source,
+    date: data.date,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
-// Notification routes
+// --- Notifications ---
 router.get('/notification', async (req: AuthRequest, res) => {
-  let result;
-  if (req.query.is_read !== undefined && req.query.type) {
-    result = await sql`
-      SELECT * FROM notifications
-      WHERE wallet_owner = ${req.user!.email}
-      AND is_read = ${req.query.is_read === 'true'}
-      AND type = ${req.query.type as string}
-      ORDER BY created_date DESC
-    `;
-  } else if (req.query.is_read !== undefined) {
-    result = await sql`
-      SELECT * FROM notifications
-      WHERE wallet_owner = ${req.user!.email}
-      AND is_read = ${req.query.is_read === 'true'}
-      ORDER BY created_date DESC
-    `;
-  } else if (req.query.type) {
-    result = await sql`
-      SELECT * FROM notifications
-      WHERE wallet_owner = ${req.user!.email}
-      AND type = ${req.query.type as string}
-      ORDER BY created_date DESC
-    `;
-  } else {
-    result = await sql`
-      SELECT * FROM notifications
-      WHERE wallet_owner = ${req.user!.email}
-      ORDER BY created_date DESC
-    `;
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.notifications).where('wallet_owner', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as Record<string, unknown>[];
+  if (req.query.is_read !== undefined) {
+    const want = req.query.is_read === 'true';
+    rows = rows.filter((r) => r.is_read === want);
   }
-  res.json(result.rows);
+  if (req.query.type) {
+    rows = rows.filter((r) => r.type === req.query.type);
+  }
+  rows.sort((a, b) => String(b.created_date || '').localeCompare(String(a.created_date || '')));
+  res.json(rows);
 });
 
 router.post('/notification', async (req: AuthRequest, res) => {
   const data = { ...req.body, wallet_owner: req.user!.email };
-  const result = await sql`
-    INSERT INTO notifications (title, message, type, is_read, action_url, wallet_owner)
-    VALUES (${data.title}, ${data.message}, ${data.type}, ${data.is_read ?? false}, ${data.action_url || null}, ${data.wallet_owner})
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.notifications).doc();
+  await ref.set({
+    title: data.title,
+    message: data.message,
+    type: data.type,
+    is_read: data.is_read ?? false,
+    action_url: data.action_url || null,
+    wallet_owner: data.wallet_owner,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/notification/:id', async (req: AuthRequest, res) => {
-  try {
-    const updates = req.body;
-    const allowedFields = ['title', 'message', 'type', 'is_read', 'action_url'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const result = await updateEntity('notifications', req.params.id, filteredUpdates, 'wallet_owner', req.user!.email);
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'Notification not found' });
-    }
-    res.json(result[0]);
-  } catch (error: any) {
-    console.error('Update notification error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update notification' });
-  }
+  const allowed = ['title', 'message', 'type', 'is_read', 'action_url'];
+  const updated = await updateOwnedDoc(COL.notifications, req.params.id, req.body, allowed, 'wallet_owner', req.user!.email);
+  if (updated === 'no_fields') return res.status(400).json({ error: 'No valid fields to update' });
+  if (!updated) return res.status(404).json({ error: 'Notification not found' });
+  res.json(updated);
 });
 
-// AI Recommendation routes
+// --- AI recommendations ---
 router.get('/ai-recommendation', async (req: AuthRequest, res) => {
-  const result = await sql`
-    SELECT * FROM ai_recommendations
-    WHERE wallet_owner = ${req.user!.email}
-    ORDER BY created_date DESC
-  `;
-  res.json(result.rows);
+  const db = getFirestoreDb();
+  const snap = await db.collection(COL.ai).where('wallet_owner', '==', req.user!.email).get();
+  let rows = snap.docs.map((d) => docToRow(d)) as any[];
+  rows.sort((a, b) => (b.created_date || '').localeCompare(a.created_date || ''));
+  res.json(rows);
 });
 
 router.post('/ai-recommendation', async (req: AuthRequest, res) => {
   const data = { ...req.body, wallet_owner: req.user!.email };
-  const result = await sql`
-    INSERT INTO ai_recommendations (
-      wallet_owner, type, title, description, impact, effort,
-      estimated_savings, target_id, is_implemented
-    )
-    VALUES (
-      ${data.wallet_owner}, ${data.type}, ${data.title}, ${data.description},
-      ${data.impact}, ${data.effort}, ${data.estimated_savings || null},
-      ${data.target_id || null}, ${data.is_implemented ?? false}
-    )
-    RETURNING *
-  `;
-  res.status(201).json(result.rows[0]);
+  const db = getFirestoreDb();
+  const now = Timestamp.now();
+  const ref = db.collection(COL.ai).doc();
+  await ref.set({
+    wallet_owner: data.wallet_owner,
+    type: data.type,
+    title: data.title,
+    description: data.description,
+    impact: data.impact,
+    effort: data.effort,
+    estimated_savings: data.estimated_savings || null,
+    target_id: data.target_id || null,
+    is_implemented: data.is_implemented ?? false,
+    created_date: now,
+    updated_date: now,
+  });
+  res.status(201).json(docToRow(await ref.get()));
 });
 
 router.patch('/ai-recommendation/:id', async (req: AuthRequest, res) => {
-  try {
-    const updates = req.body;
-    const allowedFields = ['type', 'title', 'description', 'impact', 'effort', 'estimated_savings', 'target_id', 'is_implemented'];
-    const filteredUpdates: Record<string, any> = {};
-    
-    for (const field of allowedFields) {
-      if (updates[field] !== undefined) {
-        filteredUpdates[field] = updates[field];
-      }
-    }
-
-    if (Object.keys(filteredUpdates).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const result = await updateEntity('ai_recommendations', req.params.id, filteredUpdates, 'wallet_owner', req.user!.email);
-    if (result.length === 0) {
-      return res.status(404).json({ error: 'AI recommendation not found' });
-    }
-    res.json(result[0]);
-  } catch (error: any) {
-    console.error('Update AI recommendation error:', error);
-    res.status(500).json({ error: error.message || 'Failed to update AI recommendation' });
-  }
+  const allowed = [
+    'type', 'title', 'description', 'impact', 'effort', 'estimated_savings', 'target_id', 'is_implemented',
+  ];
+  const updated = await updateOwnedDoc(COL.ai, req.params.id, req.body, allowed, 'wallet_owner', req.user!.email);
+  if (updated === 'no_fields') return res.status(400).json({ error: 'No valid fields to update' });
+  if (!updated) return res.status(404).json({ error: 'AI recommendation not found' });
+  res.json(updated);
 });
 
 export default router;
-

@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -23,13 +23,25 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment variables
+# Environment variables (never commit real secrets)
 .env
-.env.local
-.env.production.local
-.env.development.local
+.env.*
+!.env.example
+!**/.env.example
 
-# PWA files
+# Backend build output
+backend/dist/
+
+# Firebase CLI
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# Secret keys and service accounts (never commit)
+*.pem
+*firebase-adminsdk*.json
+*service-account*.json
+
+# PWA generated
 sw.js
 workbox-*.js
-

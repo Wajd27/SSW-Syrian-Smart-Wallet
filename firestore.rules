@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// All data access for this app goes through the Node API (Firebase Admin SDK),
+// which bypasses these rules. Client SDK access is denied by default.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
