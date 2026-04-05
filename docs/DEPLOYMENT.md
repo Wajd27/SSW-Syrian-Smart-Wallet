@@ -5,7 +5,7 @@
 - **Frontend (PWA):** Vite build → static `dist/` (Firebase Hosting, Vercel, or any static host).
 - **Backend (API):** Node + Express on Vercel, Cloud Run, Railway, etc.
 - **Data:** Google Firestore (Firebase project).
-- **Files (optional):** Firebase Storage or Supabase Storage (env-driven).
+- **Files (optional):** Vercel Blob (recommended when the API runs on Vercel), or Firebase Storage, or Supabase Storage (env-driven; first configured backend wins).
 
 ## Environment variables
 
@@ -23,8 +23,9 @@
 | `FIREBASE_PROJECT_ID` | Recommended | Must match the service account project |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` or `FIREBASE_SERVICE_ACCOUNT_JSON` or `GOOGLE_APPLICATION_CREDENTIALS` | Yes | Firebase Admin credentials |
 | `CORS_ORIGIN` | Optional | Frontend origin if not using defaults in code |
-| `FIREBASE_STORAGE_BUCKET` | Optional | Defaults to `{projectId}.appspot.com` |
-| `SUPABASE_*` | Optional | Only if using Supabase for file uploads instead of Firebase Storage |
+| `BLOB_READ_WRITE_TOKEN` | Optional | **Vercel Blob** — set when you use Blob storage for uploads (see below) |
+| `FIREBASE_STORAGE_BUCKET` | Optional | Firebase Storage; used if Blob is not configured |
+| `SUPABASE_*` | Optional | Supabase Storage if neither Blob nor Firebase is used for files |
 
 See `backend/.env.example` for examples.
 
@@ -56,6 +57,14 @@ firebase deploy --only hosting
 Set the same backend env vars in the Vercel project. The app exports the Express `app` for serverless (`vercel.json` in `backend/` if present).
 
 After code changes, **redeploy** the Vercel project (or push to the connected Git branch) so the API serves the new build.
+
+### Vercel Blob (images / uploads)
+
+1. In [Vercel Dashboard](https://vercel.com) → your API project → **Storage** → **Blob** → create a store (or use an existing one).
+2. Connect the store to the project so **`BLOB_READ_WRITE_TOKEN`** is available to serverless functions (or copy the read-write token into **Settings → Environment Variables** for Production / Preview).
+3. Redeploy the backend. Uploads go to `POST /api/files/upload` and are stored under `{user email}/{filename}` as **public** blobs; URLs look like `https://….public.blob.vercel-storage.com/…`.
+
+If `BLOB_READ_WRITE_TOKEN` is not set, the API falls back to Firebase Storage or Supabase when those env vars are present.
 
 ## Admin users (exchange rates)
 

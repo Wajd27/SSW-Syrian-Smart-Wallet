@@ -1,5 +1,6 @@
 import express from 'express';
 import multer from 'multer';
+import { put } from '@vercel/blob';
 import { createClient } from '@supabase/supabase-js';
 import { getApps } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
@@ -29,6 +30,10 @@ const upload = multer({
 
 router.use(authenticateToken);
 
+function useVercelBlob(): boolean {
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+}
+
 function useFirebaseStorage(): boolean {
   return Boolean(process.env.FIREBASE_STORAGE_BUCKET);
 }
@@ -42,6 +47,21 @@ router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
     const fileExt = path.extname(req.file.originalname);
     const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExt}`;
     const objectPath = `${req.user!.email}/${fileName}`;
+
+    if (useVercelBlob()) {
+      const blob = await put(objectPath, req.file.buffer, {
+        access: 'public',
+        contentType: req.file.mimetype,
+        addRandomSuffix: false,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
+      return res.json({
+        url: blob.url,
+        filename: fileName,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+      });
+    }
 
     if (useFirebaseStorage()) {
       initFirebase();
@@ -71,7 +91,9 @@ router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
     }
 
     if (!supabase) {
-      return res.status(500).json({ error: 'Configure Firebase Storage (FIREBASE_STORAGE_BUCKET) or Supabase storage.' });
+      return res.status(500).json({
+        error: 'Configure Vercel Blob (BLOB_READ_WRITE_TOKEN), Firebase Storage (FIREBASE_STORAGE_BUCKET), or Supabase storage.',
+      });
     }
 
     const { error: uploadError } = await supabase.storage.from(supabaseBucket).upload(objectPath, req.file.buffer, {
@@ -102,6 +124,18 @@ router.post('/signed-url', async (req: AuthRequest, res) => {
     const { uri } = req.body;
     if (!uri) {
       return res.status(400).json({ error: 'File URI is required' });
+    }
+
+    if (uri.includes('blob.vercel-storage.com')) {
+      const urlObj = new URL(uri);
+      const objectPath = decodeURIComponent(urlObj.pathname.replace(/^\/+/, ''));
+      if (!objectPath) {
+        return res.status(400).json({ error: 'Invalid Vercel Blob URI' });
+      }
+      if (!isStoragePathOwnedByUser(objectPath, req.user!.email)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+      return res.json({ signed_url: uri });
     }
 
     if (uri.includes('firebasestorage.googleapis.com') && process.env.FIREBASE_STORAGE_BUCKET) {
