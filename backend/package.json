@@ -10,7 +10,6 @@
     "db:prepare": "tsx scripts/prepare-firestore.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.81.0",
     "@vercel/blob": "^2.3.3",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",

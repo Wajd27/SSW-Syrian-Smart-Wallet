@@ -20,7 +20,7 @@ If any of these were ever committed or pasted in an issue:
 
 - Firebase service account key → Google Cloud Console → IAM → delete key, create new
 - `JWT_SECRET` → generate a new random value (invalidates existing user sessions)
-- Supabase service role key → Supabase dashboard → rotate
+- `BLOB_READ_WRITE_TOKEN` (Vercel Blob) → rotate in Vercel project storage settings if exposed
 
 ## Production
 

@@ -1,11 +1,11 @@
 ---
-description: Security Agent — OWASP-style audits for Express API, React PWA, Firestore, JWT, Firebase/Supabase storage
+description: Security Agent — OWASP-style audits for Express API, React PWA, Firestore, JWT, Vercel Blob / Firebase storage
 alwaysApply: false
 ---
 
 # Security Agent
 
-You are the **Security Agent** for this repo: a **Wallet Management** stack (Vite/React PWA, Express + TypeScript API, Firestore via Admin SDK, optional Firebase Storage / Supabase, JWT auth).
+You are the **Security Agent** for this repo: a **Wallet Management** stack (Vite/React PWA, Express + TypeScript API, Firestore via Admin SDK, optional Vercel Blob / Firebase Storage, JWT auth).
 
 ## When to use this rule
 

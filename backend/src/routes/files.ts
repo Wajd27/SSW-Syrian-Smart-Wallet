@@ -1,7 +1,6 @@
 import express from 'express';
 import multer from 'multer';
 import { put } from '@vercel/blob';
-import { createClient } from '@supabase/supabase-js';
 import { getApp, getApps } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
@@ -10,17 +9,6 @@ import { isStoragePathOwnedByUser, isVercelBlobPathOwnedByUser } from '../utils/
 import path from 'path';
 
 const router = express.Router();
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseBucket = process.env.SUPABASE_BUCKET_NAME || 'uploads';
-
-const supabase =
-  supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.warn('Warning: Supabase credentials not found. Supabase uploads will be skipped if Firebase Storage is not used.');
-}
 
 const storage = multer.memoryStorage();
 const upload = multer({
@@ -57,95 +45,76 @@ router.post(
     });
   },
   async (req: AuthRequest, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
 
-    const fileExt = path.extname(req.file.originalname);
-    const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExt}`;
-    const emailPath = `${req.user!.email}/${fileName}`;
+      const fileExt = path.extname(req.file.originalname);
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExt}`;
+      const emailPath = `${req.user!.email}/${fileName}`;
 
-    if (useVercelBlob()) {
+      if (useVercelBlob()) {
+        try {
+          const objectPath = `${req.user!.id}/${fileName}`;
+          const blob = await put(objectPath, req.file.buffer, {
+            access: 'public',
+            contentType: req.file.mimetype,
+            addRandomSuffix: false,
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+          });
+          return res.json({
+            url: blob.url,
+            filename: fileName,
+            size: req.file.size,
+            mimetype: req.file.mimetype,
+          });
+        } catch (blobErr) {
+          console.error('Vercel Blob upload failed, trying Firebase:', blobErr);
+        }
+      }
+
+      const objectPath = emailPath;
+
       try {
-        const objectPath = `${req.user!.id}/${fileName}`;
-        const blob = await put(objectPath, req.file.buffer, {
-          access: 'public',
+        initFirebase();
+      } catch (e) {
+        console.error('initFirebase in upload:', e);
+      }
+
+      if (getApps().length > 0) {
+        let bucketName: string;
+        try {
+          bucketName = firebaseBucketName();
+        } catch (e: any) {
+          return res.status(500).json({ error: e?.message || 'Firebase bucket not configured' });
+        }
+        const bucket = getStorage().bucket(bucketName);
+        const file = bucket.file(objectPath);
+        await file.save(req.file.buffer, {
           contentType: req.file.mimetype,
-          addRandomSuffix: false,
-          token: process.env.BLOB_READ_WRITE_TOKEN,
+          resumable: false,
+        });
+        const [readUrl] = await file.getSignedUrl({
+          action: 'read',
+          expires: Date.now() + 365 * 24 * 3600 * 1000,
         });
         return res.json({
-          url: blob.url,
+          url: readUrl,
           filename: fileName,
           size: req.file.size,
           mimetype: req.file.mimetype,
         });
-      } catch (blobErr) {
-        console.error('Vercel Blob upload failed, trying Firebase/Supabase:', blobErr);
       }
-    }
 
-    const objectPath = emailPath;
-
-    try {
-      initFirebase();
-    } catch (e) {
-      console.error('initFirebase in upload:', e);
-    }
-
-    if (getApps().length > 0) {
-      let bucketName: string;
-      try {
-        bucketName = firebaseBucketName();
-      } catch (e: any) {
-        return res.status(500).json({ error: e?.message || 'Firebase bucket not configured' });
-      }
-      const bucket = getStorage().bucket(bucketName);
-      const file = bucket.file(objectPath);
-      await file.save(req.file.buffer, {
-        contentType: req.file.mimetype,
-        resumable: false,
-      });
-      const [readUrl] = await file.getSignedUrl({
-        action: 'read',
-        expires: Date.now() + 365 * 24 * 3600 * 1000,
-      });
-      return res.json({
-        url: readUrl,
-        filename: fileName,
-        size: req.file.size,
-        mimetype: req.file.mimetype,
-      });
-    }
-
-    if (!supabase) {
       return res.status(500).json({
-        error: 'Configure Vercel Blob (BLOB_READ_WRITE_TOKEN), Firebase Storage (FIREBASE_STORAGE_BUCKET), or Supabase storage.',
+        error:
+          'File storage is not configured. Set BLOB_READ_WRITE_TOKEN (Vercel Blob) and/or Firebase Admin credentials with Storage enabled.',
       });
+    } catch (error: any) {
+      console.error('File upload error:', error);
+      res.status(500).json({ error: error?.message || 'File upload failed' });
     }
-
-    const { error: uploadError } = await supabase.storage.from(supabaseBucket).upload(objectPath, req.file.buffer, {
-      contentType: req.file.mimetype,
-      upsert: false,
-    });
-
-    if (uploadError) {
-      console.error('Supabase upload error:', uploadError);
-      return res.status(500).json({ error: uploadError.message || 'File upload failed' });
-    }
-
-    const { data: urlData } = supabase.storage.from(supabaseBucket).getPublicUrl(objectPath);
-    res.json({
-      url: urlData.publicUrl,
-      filename: fileName,
-      size: req.file.size,
-      mimetype: req.file.mimetype,
-    });
-  } catch (error: any) {
-    console.error('File upload error:', error);
-    res.status(500).json({ error: error?.message || 'File upload failed' });
-  }
   }
 );
 
@@ -197,30 +166,7 @@ router.post('/signed-url', async (req: AuthRequest, res) => {
       return res.json({ signed_url: signedUrl });
     }
 
-    if (!supabase) {
-      return res.status(500).json({ error: 'Storage backend not configured' });
-    }
-
-    const urlObj = new URL(uri);
-    const rawSegment = urlObj.pathname.split(`/${supabaseBucket}/`)[1];
-    if (!rawSegment) {
-      return res.status(400).json({ error: 'Invalid file URI' });
-    }
-    const filePath = decodeURIComponent(rawSegment);
-    if (!isStoragePathOwnedByUser(filePath, req.user!.email)) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
-
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from(supabaseBucket)
-      .createSignedUrl(filePath, 3600);
-
-    if (signedUrlError) {
-      console.error('Signed URL error:', signedUrlError);
-      return res.status(500).json({ error: signedUrlError.message || 'Failed to generate signed URL' });
-    }
-
-    res.json({ signed_url: signedUrlData.signedUrl });
+    return res.status(400).json({ error: 'Unsupported storage URL (use Vercel Blob or Firebase Storage)' });
   } catch (error: any) {
     console.error('Signed URL error:', error);
     res.status(500).json({ error: error.message || 'Failed to generate signed URL' });

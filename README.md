@@ -11,7 +11,7 @@ A bilingual (Arabic and English) Progressive Web Application for personal financ
 | Charts | Recharts |
 | Internationalization | react-i18next |
 | Data fetching & cache | TanStack Query; React Context where appropriate |
-| Backend / data | REST API with Firebase Admin (Firestore); optional Supabase for storage |
+| Backend / data | REST API with Firebase Admin (Firestore); file uploads via Vercel Blob and/or Firebase Storage |
 | Deployment | Vercel or any Node-compatible host for the API; static hosting for the PWA |
 
 ## Features
@@ -64,7 +64,7 @@ FIREBASE_PROJECT_ID=syriansmartwallet
 FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
 ```
 
-The default Firebase project id above matches **`.firebaserc`** (`firebase use`). The value of `FIREBASE_PROJECT_ID` must match the `project_id` inside the service account JSON; the API validates this at startup. Generate the key in the Firebase Console under **Project settings → Service accounts → Generate new private key**. You may pass the JSON as a single line or use `GOOGLE_APPLICATION_CREDENTIALS` pointing to the file while still setting `FIREBASE_PROJECT_ID`. Storage defaults to `{projectId}.appspot.com`; override with `FIREBASE_STORAGE_BUCKET` if needed. Supabase can be used for uploads by configuring the Supabase variables in `backend/.env.example` as documented there.
+The default Firebase project id above matches **`.firebaserc`** (`firebase use`). The value of `FIREBASE_PROJECT_ID` must match the `project_id` inside the service account JSON; the API validates this at startup. Generate the key in the Firebase Console under **Project settings → Service accounts → Generate new private key**. You may pass the JSON as a single line or use `GOOGLE_APPLICATION_CREDENTIALS` pointing to the file while still setting `FIREBASE_PROJECT_ID`. Storage defaults to `{projectId}.appspot.com`; override with `FIREBASE_STORAGE_BUCKET` if needed. Optional **Vercel Blob** for uploads is documented in `backend/.env.example` and `docs/DEPLOYMENT.md`.
 
 4. Run the API:
 
