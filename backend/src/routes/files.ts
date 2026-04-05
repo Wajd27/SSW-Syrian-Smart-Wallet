@@ -6,7 +6,7 @@ import { getApps } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { initFirebase } from '../db/firebase.js';
-import { isStoragePathOwnedByUser } from '../utils/storage-path.js';
+import { isStoragePathOwnedByUser, isVercelBlobPathOwnedByUser } from '../utils/storage-path.js';
 import path from 'path';
 
 const router = express.Router();
@@ -38,7 +38,18 @@ function useFirebaseStorage(): boolean {
   return Boolean(process.env.FIREBASE_STORAGE_BUCKET);
 }
 
-router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
+router.post(
+  '/upload',
+  (req, res, next) => {
+    upload.single('file')(req, res, (err: unknown) => {
+      if (err) {
+        const msg = err instanceof Error ? err.message : 'Upload failed';
+        return res.status(400).json({ error: msg });
+      }
+      next();
+    });
+  },
+  async (req: AuthRequest, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
@@ -46,9 +57,10 @@ router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
 
     const fileExt = path.extname(req.file.originalname);
     const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExt}`;
-    const objectPath = `${req.user!.email}/${fileName}`;
+    const emailPath = `${req.user!.email}/${fileName}`;
 
     if (useVercelBlob()) {
+      const objectPath = `${req.user!.id}/${fileName}`;
       const blob = await put(objectPath, req.file.buffer, {
         access: 'public',
         contentType: req.file.mimetype,
@@ -62,6 +74,8 @@ router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
         mimetype: req.file.mimetype,
       });
     }
+
+    const objectPath = emailPath;
 
     if (useFirebaseStorage()) {
       initFirebase();
@@ -115,9 +129,10 @@ router.post('/upload', upload.single('file'), async (req: AuthRequest, res) => {
     });
   } catch (error: any) {
     console.error('File upload error:', error);
-    res.status(500).json({ error: error.message || 'File upload failed' });
+    res.status(500).json({ error: error?.message || 'File upload failed' });
   }
-});
+  }
+);
 
 router.post('/signed-url', async (req: AuthRequest, res) => {
   try {
@@ -132,7 +147,7 @@ router.post('/signed-url', async (req: AuthRequest, res) => {
       if (!objectPath) {
         return res.status(400).json({ error: 'Invalid Vercel Blob URI' });
       }
-      if (!isStoragePathOwnedByUser(objectPath, req.user!.email)) {
+      if (!isVercelBlobPathOwnedByUser(objectPath, req.user!.id, req.user!.email)) {
         return res.status(403).json({ error: 'Access denied' });
       }
       return res.json({ signed_url: uri });

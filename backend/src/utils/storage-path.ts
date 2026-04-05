@@ -10,3 +10,13 @@ export function isStoragePathOwnedByUser(objectPath: string, userEmail: string):
   if (!p || p.includes('..')) return false;
   return p === prefix || p.startsWith(`${prefix}/`);
 }
+
+/**
+ * Vercel Blob uses `{userId}/{file}` (no `@` in path). Legacy blob paths may still use `email/...`.
+ */
+export function isVercelBlobPathOwnedByUser(objectPath: string, userId: string, userEmail: string): boolean {
+  const p = objectPath.trim();
+  if (!p || p.includes('..')) return false;
+  if (p === userId || p.startsWith(`${userId}/`)) return true;
+  return isStoragePathOwnedByUser(objectPath, userEmail);
+}

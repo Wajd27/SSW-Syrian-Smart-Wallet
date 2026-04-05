@@ -62,7 +62,7 @@ After code changes, **redeploy** the Vercel project (or push to the connected Gi
 
 1. In [Vercel Dashboard](https://vercel.com) → your API project → **Storage** → **Blob** → create a store (or use an existing one).
 2. Connect the store to the project so **`BLOB_READ_WRITE_TOKEN`** is available to serverless functions (or copy the read-write token into **Settings → Environment Variables** for Production / Preview).
-3. Redeploy the backend. Uploads go to `POST /api/files/upload` and are stored under `{user email}/{filename}` as **public** blobs; URLs look like `https://….public.blob.vercel-storage.com/…`.
+3. Redeploy the backend. Uploads go to `POST /api/files/upload` and are stored under `{user id}/{filename}` (Firestore user document id, path-safe) as **public** blobs; URLs look like `https://….public.blob.vercel-storage.com/…`.
 
 If `BLOB_READ_WRITE_TOKEN` is not set, the API falls back to Firebase Storage or Supabase when those env vars are present.
 
