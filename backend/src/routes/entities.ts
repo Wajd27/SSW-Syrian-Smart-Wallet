@@ -4,6 +4,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import { getFirestoreDb } from '../db/firebase.js';
 import { docToRow } from '../utils/firestore-serializers.js';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/requireAdmin.js';
 
 const router = express.Router();
 router.use(authenticateToken);
@@ -233,7 +234,12 @@ router.get('/recurring-transaction', async (req: AuthRequest, res) => {
 
 router.post('/recurring-transaction', async (req: AuthRequest, res) => {
   const data = { ...req.body, wallet_owner: req.user!.email };
+  if (!data.wallet_id) {
+    return res.status(400).json({ error: 'wallet_id is required' });
+  }
   const db = getFirestoreDb();
+  const w = await walletOwned(db, data.wallet_id, req.user!.email);
+  if (!w) return res.status(403).json({ error: 'Wallet not found or access denied' });
   const now = Timestamp.now();
   const ref = db.collection(COL.recurring).doc();
   await ref.set({
@@ -598,7 +604,7 @@ router.get('/exchange-rate', async (req: AuthRequest, res) => {
   res.json(snap.docs.map((d) => docToRow(d)));
 });
 
-router.post('/exchange-rate', async (req: AuthRequest, res) => {
+router.post('/exchange-rate', requireAdmin, async (req: AuthRequest, res) => {
   const data = req.body;
   const db = getFirestoreDb();
   const now = Timestamp.now();

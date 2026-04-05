@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { initFirebase } from './db/firebase.js';
 import authRoutes from './routes/auth.js';
@@ -9,6 +10,16 @@ import fileRoutes from './routes/files.js';
 dotenv.config();
 
 const app = express();
+
+if (process.env.VERCEL === '1') {
+  app.set('trust proxy', 1);
+}
+
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
 
 // Middleware — CORS (comma-separated CORS_ORIGIN in .env)
 const extraOrigins =

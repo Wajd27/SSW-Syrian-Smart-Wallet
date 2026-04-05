@@ -54,3 +54,20 @@ firebase deploy --only hosting
 ## Backend on Vercel
 
 Set the same backend env vars in the Vercel project. The app exports the Express `app` for serverless (`vercel.json` in `backend/` if present).
+
+After code changes, **redeploy** the Vercel project (or push to the connected Git branch) so the API serves the new build.
+
+## Admin users (exchange rates)
+
+`POST /api/entities/exchange-rate` is restricted to Firestore users with **`role: "admin"`** (string on the `users/{userId}` document). Regular users still use `GET /api/entities/exchange-rate` for reads.
+
+1. In Firebase Console → Firestore → open a user document under `users`.
+2. Add or set field **`role`** = **`admin`** (string).
+3. That user’s JWT session can POST new exchange rates; others receive **403 Forbidden**.
+
+## Making security fixes live (checklist)
+
+1. **Commit and push** changes to your Git remote.
+2. **Backend:** deploy the API (e.g. Vercel dashboard → Deployments → Redeploy, or push to the production branch).
+3. **Frontend:** run `npm run build` and deploy `dist/` (Firebase Hosting, Vercel, etc.); ensure `VITE_API_URL` points at the deployed API.
+4. **Smoke test** login, one CRUD flow, and (if you use uploads) file signed URL for your own files only.

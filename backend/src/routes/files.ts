@@ -5,6 +5,7 @@ import { getApps } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 import { initFirebase } from '../db/firebase.js';
+import { isStoragePathOwnedByUser } from '../utils/storage-path.js';
 import path from 'path';
 
 const router = express.Router();
@@ -110,10 +111,17 @@ router.post('/signed-url', async (req: AuthRequest, res) => {
         return res.status(500).json({ error: 'FIREBASE_STORAGE_BUCKET is not set' });
       }
       const urlObj = new URL(uri);
+      const bucketInPath = urlObj.pathname.match(/\/v0\/b\/([^/]+)\/o\//);
+      if (bucketInPath && bucketInPath[1] !== bucketName) {
+        return res.status(400).json({ error: 'Invalid storage location' });
+      }
       const pathMatch = urlObj.pathname.match(/\/o\/(.+)/);
       const objectPath = pathMatch ? decodeURIComponent(pathMatch[1]) : '';
       if (!objectPath) {
         return res.status(400).json({ error: 'Invalid Firebase Storage URI' });
+      }
+      if (!isStoragePathOwnedByUser(objectPath, req.user!.email)) {
+        return res.status(403).json({ error: 'Access denied' });
       }
       const bucket = getStorage().bucket(bucketName);
       const [signedUrl] = await bucket.file(objectPath).getSignedUrl({
@@ -128,9 +136,13 @@ router.post('/signed-url', async (req: AuthRequest, res) => {
     }
 
     const urlObj = new URL(uri);
-    const filePath = urlObj.pathname.split(`/${supabaseBucket}/`)[1];
-    if (!filePath) {
+    const rawSegment = urlObj.pathname.split(`/${supabaseBucket}/`)[1];
+    if (!rawSegment) {
       return res.status(400).json({ error: 'Invalid file URI' });
+    }
+    const filePath = decodeURIComponent(rawSegment);
+    if (!isStoragePathOwnedByUser(filePath, req.user!.email)) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage

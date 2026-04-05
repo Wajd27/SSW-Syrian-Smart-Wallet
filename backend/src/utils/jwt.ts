@@ -15,5 +15,6 @@ export function getJwtSecret(): string {
 export function generateToken(payload: { email: string; id: string; full_name: string }): string {
   return jwt.sign(payload, getJwtSecret(), {
     expiresIn: JWT_EXPIRES_IN,
+    algorithm: 'HS256',
   } as jwt.SignOptions);
 }

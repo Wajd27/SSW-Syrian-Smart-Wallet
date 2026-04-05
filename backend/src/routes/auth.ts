@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getFirestoreDb } from '../db/firebase.js';
 import { tsToIso } from '../utils/firestore-serializers.js';
@@ -8,6 +9,20 @@ import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 const USERS = 'users';
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 function userPublicFields(data: Record<string, unknown>, id: string) {
   return {
@@ -23,7 +38,7 @@ function userPublicFields(data: Record<string, unknown>, id: string) {
   };
 }
 
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   try {
     const { email, password, full_name } = req.body;
 
@@ -74,7 +89,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
