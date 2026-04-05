@@ -28,6 +28,8 @@ dist-ssr
 .env.*
 !.env.example
 !**/.env.example
+# Public production API base (not a secret — baked into the client bundle anyway)
+!.env.production
 
 # Backend build output
 backend/dist/

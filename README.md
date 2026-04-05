@@ -46,7 +46,10 @@ A bilingual (Arabic/English) Progressive Web App for comprehensive wallet manage
 npm install
 ```
 
-3. Create a `.env` file in the project root for the PWA:
+3. Environment for the PWA (Vite):
+   - **Local dev:** copy `.env.example` to `.env` (or keep the default below). `npm run dev` loads `.env` and talks to the API on `http://localhost:3001`.
+   - **Production build:** `npm run build` uses **`.env.production`**, which points at the hosted API: `https://backend-flax-sigma-87.vercel.app/api`. Update that file if your Vercel domain changes.
+
 ```env
 VITE_API_URL=http://localhost:3001/api
 ```
@@ -156,15 +159,17 @@ The application uses 12 main entities:
 
 ## API Integration
 
-The app uses a RESTful API pattern. Update `VITE_API_URL` in your `.env` file to point to your backend API.
+The app uses a RESTful API pattern. **Development:** set `VITE_API_URL` in `.env`. **Production:** set `VITE_API_URL` in `.env.production` (current hosted API: `https://backend-flax-sigma-87.vercel.app/api`).
 
 ## Building for Production
+
+Uses `.env.production` so the bundle calls the Vercel backend (not localhost).
 
 ```bash
 npm run build
 ```
 
-The built files will be in the `dist` directory, ready for deployment.
+Output is in `dist/`. Deploy to Firebase Hosting with `firebase deploy --only hosting` (after `firebase login` and correct project).
 
 ## License
 
