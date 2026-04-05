@@ -30,7 +30,6 @@ function Dashboard() {
       if (!user?.email) return [];
       try {
         const result = await entities.wallet.filter({ owner_email: user.email, is_active: true });
-        console.log('Wallets fetched:', result?.length || 0);
         return result;
       } catch (error) {
         console.error('Error fetching wallets:', error);

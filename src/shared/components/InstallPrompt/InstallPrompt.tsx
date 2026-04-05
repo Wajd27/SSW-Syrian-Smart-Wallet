@@ -2,98 +2,77 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { XMarkIcon, DevicePhoneMobileIcon, ComputerDesktopIcon } from '@heroicons/react/24/outline';
 import Button from '../Button/Button';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePwaInstallPrompt, clearPwaInstallDeferred } from '@/shared/hooks/usePwaInstallPrompt';
 
 function InstallPrompt() {
   const { t } = useTranslation();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const { deferredPrompt } = usePwaInstallPrompt();
   const [showPrompt, setShowPrompt] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if app is already installed (standalone mode)
     const standalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInStandaloneMode = (window.navigator as any).standalone || standalone;
+    const isInStandaloneMode = (window.navigator as Navigator & { standalone?: boolean }).standalone || standalone;
     setIsStandalone(isInStandaloneMode);
     setIsInstalled(isInStandaloneMode);
 
-    // Detect iOS
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
     setIsIOS(iOS);
 
-    // Check if already installed on iOS
     if (iOS && isInStandaloneMode) {
       return;
     }
 
-    // Handle beforeinstallprompt event (Android/Chrome/Edge)
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      
-      // Show prompt after a delay if not dismissed before
-      const dismissed = localStorage.getItem('pwa-install-dismissed');
-      if (!dismissed) {
-        setTimeout(() => setShowPrompt(true), 3000);
-      }
-    };
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    if (deferredPrompt && !dismissed) {
+      const id = window.setTimeout(() => setShowPrompt(true), 3000);
+      return () => window.clearTimeout(id);
+    }
+    return undefined;
+  }, [deferredPrompt]);
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Check if app was just installed
-    window.addEventListener('appinstalled', () => {
+  useEffect(() => {
+    const onInstalled = () => {
       setIsInstalled(true);
       setShowPrompt(false);
-      setDeferredPrompt(null);
-    });
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
+    window.addEventListener('appinstalled', onInstalled);
+    return () => window.removeEventListener('appinstalled', onInstalled);
   }, []);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      // For iOS, show instructions
       if (isIOS) {
         setShowPrompt(true);
       }
       return;
     }
 
-    // Show the install prompt
     deferredPrompt.prompt();
-
-    // Wait for the user to respond
     const { outcome } = await deferredPrompt.userChoice;
 
     if (outcome === 'accepted') {
-      setDeferredPrompt(null);
       setShowPrompt(false);
       setIsInstalled(true);
     } else {
       setShowPrompt(false);
       localStorage.setItem('pwa-install-dismissed', 'true');
+      clearPwaInstallDeferred();
     }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
     localStorage.setItem('pwa-install-dismissed', 'true');
+    clearPwaInstallDeferred();
   };
 
-  // Don't show if already installed or in standalone mode
   if (isInstalled || isStandalone || !showPrompt) {
     return null;
   }
 
-  // iOS Install Instructions
   if (isIOS && showPrompt) {
     return (
       <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
@@ -105,10 +84,7 @@ function InstallPrompt() {
                 {t('install.installApp') || 'Install App'}
               </h3>
             </div>
-            <button
-              onClick={handleDismiss}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
+            <button type="button" onClick={handleDismiss} className="text-gray-500 hover:text-gray-700 transition-colors">
               <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
@@ -129,7 +105,6 @@ function InstallPrompt() {
     );
   }
 
-  // Android/Desktop Install Prompt
   if (deferredPrompt) {
     return (
       <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
@@ -141,10 +116,7 @@ function InstallPrompt() {
                 {t('install.installApp') || 'Install App'}
               </h3>
             </div>
-            <button
-              onClick={handleDismiss}
-              className="text-gray-500 hover:text-gray-700 transition-colors"
-            >
+            <button type="button" onClick={handleDismiss} className="text-gray-500 hover:text-gray-700 transition-colors">
               <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
@@ -168,4 +140,3 @@ function InstallPrompt() {
 }
 
 export default InstallPrompt;
-

@@ -2,53 +2,28 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import Button from '../Button/Button';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { usePwaInstallPrompt } from '@/shared/hooks/usePwaInstallPrompt';
 
 function InstallButton() {
   const { t } = useTranslation();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const { deferredPrompt } = usePwaInstallPrompt();
   const [isIOS, setIsIOS] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
 
   useEffect(() => {
-    // Check if app is already installed (standalone mode)
     const standalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInStandaloneMode = (window.navigator as any).standalone || standalone;
+    const isInStandaloneMode = (window.navigator as Navigator & { standalone?: boolean }).standalone || standalone;
     setIsStandalone(isInStandaloneMode);
 
-    // Detect iOS
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
     setIsIOS(iOS);
-
-    // Handle beforeinstallprompt event (Android/Chrome/Edge)
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    // Check if app was just installed
-    window.addEventListener('appinstalled', () => {
-      setDeferredPrompt(null);
-    });
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
   }, []);
 
   const handleInstallClick = async () => {
     if (isIOS) {
-      // Check if user is in Safari
       const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       if (!isSafari) {
-        // Show message to use Safari
         alert(t('install.iosInstructions') || 'To install this app on your iOS device, please use Safari:');
       }
       setShowIOSModal(true);
@@ -59,18 +34,13 @@ function InstallButton() {
       return;
     }
 
-    // Show the install prompt
     deferredPrompt.prompt();
-
-    // Wait for the user to respond
     const { outcome } = await deferredPrompt.userChoice;
-
     if (outcome === 'accepted') {
-      setDeferredPrompt(null);
+      /* appinstalled will clear deferred state */
     }
   };
 
-  // Don't show if already installed
   if (isStandalone || (!deferredPrompt && !isIOS)) {
     return null;
   }
@@ -87,7 +57,6 @@ function InstallButton() {
         <span>{t('install.install') || 'Install'}</span>
       </Button>
 
-      {/* iOS Instructions Modal */}
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="glass-card backdrop-blur-xl bg-white/40 border border-blue-200/50 rounded-xl p-6 max-w-md w-full shadow-2xl animate-scale-in">
@@ -96,6 +65,7 @@ function InstallButton() {
                 {t('install.installApp') || 'Install App'}
               </h3>
               <button
+                type="button"
                 onClick={() => setShowIOSModal(false)}
                 className="text-gray-500 hover:text-gray-700 transition-colors"
               >
@@ -124,4 +94,3 @@ function InstallButton() {
 }
 
 export default InstallButton;
-
