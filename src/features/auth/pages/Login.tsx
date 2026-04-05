@@ -54,6 +54,7 @@ function Login() {
                 id="email"
                 name="email"
                 type="email"
+                autoComplete="email"
                 required
                 className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={email}
@@ -68,6 +69,7 @@ function Login() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 className="input mt-1 text-gray-900 placeholder:text-gray-500"
                 value={password}

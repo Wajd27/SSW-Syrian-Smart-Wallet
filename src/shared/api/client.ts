@@ -1,3 +1,9 @@
+const debugApi = (...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.log('[api]', ...args);
+  }
+};
+
 // Normalize API URL - remove trailing slash and ensure /api is present
 const getApiBaseUrl = (): string => {
   const envUrl = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
@@ -15,7 +21,7 @@ const getApiBaseUrl = (): string => {
   // Ensure no trailing slash
   normalized = normalized.replace(/\/+$/, '');
   
-  console.log('API Base URL:', normalized); // Debug log
+  debugApi('base URL', normalized);
   return normalized;
 };
 
@@ -45,8 +51,8 @@ class ApiClient {
     // Remove any double slashes that might occur
     const url = `${API_BASE_URL}${cleanEndpoint}`.replace(/([^:]\/)\/+/g, '$1');
     
-    console.log('Making request to:', url, 'Method:', options.method || 'GET'); // Debug log
-    
+    debugApi(options.method || 'GET', url);
+
     // Create AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -61,8 +67,8 @@ class ApiClient {
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
       
-      console.log('Response received:', response.status, response.statusText, 'URL:', url); // Debug log
-      
+      debugApi(response.status, url);
+
       // Check if response is OK before parsing JSON
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -82,7 +88,7 @@ class ApiClient {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await response.json();
-        console.log('API success response:', data?.length || 'object', 'URL:', url); // Debug log
+        debugApi('ok', url);
         return data as T;
       } else {
         // If not JSON, try to parse as text or return empty array/object based on context
