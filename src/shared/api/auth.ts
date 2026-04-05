@@ -35,12 +35,12 @@ export const authApi = {
   },
 
   async logout(): Promise<void> {
-    localStorage.removeItem('auth_token');
-    // Optionally call backend logout endpoint
     try {
       await apiClient.post('/auth/logout');
-    } catch (error) {
-      // Ignore errors on logout
+    } catch {
+      // Ignore errors (e.g. network); still clear session client-side
+    } finally {
+      localStorage.removeItem('auth_token');
     }
   },
 
