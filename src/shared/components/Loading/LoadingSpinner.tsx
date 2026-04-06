@@ -12,9 +12,9 @@ const sizeClasses = {
 function LoadingSpinner({ size = 'md', className = '' }: LoadingSpinnerProps) {
   return (
     <div className={`flex items-center justify-center ${className}`}>
-      <div className="glass-card backdrop-blur-md bg-white/20 rounded-full p-3">
+      <div className="surface-panel rounded-full p-3">
         <div
-          className={`animate-spin rounded-full border-2 border-white/30 border-t-white ${sizeClasses[size]}`}
+          className={`animate-spin rounded-full border-2 border-app-border border-t-primary-500 ${sizeClasses[size]}`}
         />
       </div>
     </div>

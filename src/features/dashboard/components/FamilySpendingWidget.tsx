@@ -104,8 +104,8 @@ function FamilySpendingWidget() {
               className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
             >
               <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="text-sm font-bold text-blue-600">
+                <div className="w-10 h-10 rounded-full bg-chip-bg border border-chip-border flex items-center justify-center">
+                  <span className="text-sm font-bold text-chip-text">
                     {member.name.charAt(0).toUpperCase()}
                   </span>
                 </div>

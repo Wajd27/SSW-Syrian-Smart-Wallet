@@ -109,15 +109,15 @@ function FamilyMemberSelector() {
           <div
             className={`cursor-pointer transition-all duration-300 hover:shadow-xl ${
               selectedMember === 'owner'
-                ? 'ring-4 ring-blue-500 bg-blue-50/50'
+                ? 'ring-4 ring-primary-500 bg-chip-bg'
                 : 'hover:bg-gray-50/50'
             }`}
             onClick={() => handleSelect('owner')}
           >
             <Card>
               <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
-                  <UserIcon className="w-10 h-10 text-blue-600" />
+                <div className="w-20 h-20 rounded-full bg-chip-bg border border-chip-border flex items-center justify-center">
+                  <UserIcon className="w-10 h-10 text-primary-500" />
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold text-gray-800">
@@ -126,7 +126,7 @@ function FamilyMemberSelector() {
                   <p className="text-sm text-gray-500 mt-1">{t('auth.accountOwner')}</p>
                 </div>
                 {selectedMember === 'owner' && (
-                  <div className="flex items-center text-blue-600 font-medium">
+                  <div className="flex items-center text-primary-600 font-medium">
                     <span>{t('common.selected')}</span>
                     <ArrowRightIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
                   </div>
@@ -146,7 +146,7 @@ function FamilyMemberSelector() {
                 key={member.id}
                 className={`cursor-pointer transition-all duration-300 hover:shadow-xl ${
                   isSelected
-                    ? 'ring-4 ring-blue-500 bg-blue-50/50'
+                    ? 'ring-4 ring-primary-500 bg-chip-bg'
                     : 'hover:bg-gray-50/50'
                 }`}
                 onClick={() => handleSelect(member)}
@@ -173,7 +173,7 @@ function FamilyMemberSelector() {
                       )}
                     </div>
                     {isSelected && (
-                      <div className="flex items-center text-blue-600 font-medium">
+                      <div className="flex items-center text-primary-600 font-medium">
                         <span>{t('common.selected')}</span>
                         <ArrowRightIcon className="w-5 h-5 ml-2 rtl:ml-0 rtl:mr-2" />
                       </div>
@@ -192,7 +192,7 @@ function FamilyMemberSelector() {
             id="remember"
             checked={rememberChoice}
             onChange={(e) => setRememberChoice(e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="w-4 h-4 text-primary-600 border-app-border rounded focus:ring-primary-500/40"
           />
           <label htmlFor="remember" className="text-sm text-gray-700 cursor-pointer">
             {t('auth.rememberChoice')}

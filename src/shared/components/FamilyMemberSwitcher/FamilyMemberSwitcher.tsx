@@ -60,54 +60,54 @@ function FamilyMemberSwitcher() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-1 sm:space-x-2 rtl:space-x-reverse px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-white/30 hover:bg-white/40 border border-white/20 transition-all duration-300 text-xs sm:text-sm"
+        className="flex items-center space-x-1 sm:space-x-2 rtl:space-x-reverse px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-white/90 hover:bg-white border border-app-border transition-all duration-200 text-xs sm:text-sm"
       >
         <div className="flex items-center space-x-1 sm:space-x-2 rtl:space-x-reverse">
           {selectedFamilyMember === 'owner' || !selectedFamilyMember ? (
-            <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+            <UserIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500" />
           ) : (
-            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-green-500 flex items-center justify-center">
+            <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-accent-green flex items-center justify-center">
               <span className="text-[10px] sm:text-xs font-bold text-white">
                 {selectedFamilyMember.name.charAt(0).toUpperCase()}
               </span>
             </div>
           )}
           <div className="text-left rtl:text-right hidden sm:block">
-            <div className="text-xs text-gray-500">{t('family.viewingAs')}</div>
-            <div className="font-medium text-gray-800 truncate max-w-[80px]">{getCurrentName()}</div>
+            <div className="text-xs text-muted">{t('family.viewingAs')}</div>
+            <div className="font-medium text-app truncate max-w-[80px]">{getCurrentName()}</div>
           </div>
           <div className="text-left rtl:text-right sm:hidden">
-            <div className="font-medium text-gray-800 truncate max-w-[60px] text-xs">{getCurrentName()}</div>
+            <div className="font-medium text-app truncate max-w-[60px] text-xs">{getCurrentName()}</div>
           </div>
         </div>
         <ChevronDownIcon
-          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-600 transition-transform duration-200 ${
+          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-app-soft transition-transform duration-200 ${
             isOpen ? 'transform rotate-180' : ''
           }`}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-64 glass-card backdrop-blur-xl bg-white/30 border border-white/20 rounded-lg shadow-xl z-50 animate-fade-in">
+        <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-64 surface-panel rounded-xl z-50 animate-fade-in">
           <div className="py-2">
             {/* Owner Option */}
             <button
               onClick={() => handleSelect('owner')}
-              className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 hover:bg-white/40 transition-colors ${
+              className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 hover:bg-app-bg transition-colors ${
                 selectedFamilyMember === 'owner' || !selectedFamilyMember
-                  ? 'bg-blue-100/50 border-r-4 rtl:border-r-0 rtl:border-l-4 border-blue-500'
+                  ? 'bg-chip-bg border-r-4 rtl:border-r-0 rtl:border-l-4 border-primary-500'
                   : ''
               }`}
             >
-              <UserIcon className="w-5 h-5 text-blue-600" />
+              <UserIcon className="w-5 h-5 text-primary-500" />
               <div className="flex-1 text-left rtl:text-right">
-                <div className="font-medium text-gray-800">
+                <div className="font-medium text-app">
                   {user.full_name || user.email}
                 </div>
-                <div className="text-xs text-gray-500">{t('auth.accountOwner')}</div>
+                <div className="text-xs text-muted">{t('auth.accountOwner')}</div>
               </div>
               {(selectedFamilyMember === 'owner' || !selectedFamilyMember) && (
-                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                <div className="w-2 h-2 rounded-full bg-primary-500"></div>
               )}
             </button>
 
@@ -116,31 +116,31 @@ function FamilyMemberSwitcher() {
               <button
                 key={member.id}
                 onClick={() => handleSelect(member)}
-                className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 hover:bg-white/40 transition-colors ${
+                className={`w-full flex items-center space-x-3 rtl:space-x-reverse px-4 py-3 hover:bg-app-bg transition-colors ${
                   selectedFamilyMember && selectedFamilyMember !== 'owner' && selectedFamilyMember.id === member.id
-                    ? 'bg-blue-100/50 border-r-4 rtl:border-r-0 rtl:border-l-4 border-blue-500'
+                    ? 'bg-chip-bg border-r-4 rtl:border-r-0 rtl:border-l-4 border-primary-500'
                     : ''
                 }`}
               >
-                <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-accent-green flex items-center justify-center">
                   <span className="text-xs font-bold text-white">
                     {member.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 text-left rtl:text-right">
-                  <div className="font-medium text-gray-800">{member.name}</div>
-                  <div className="text-xs text-gray-500">{member.relationship}</div>
+                  <div className="font-medium text-app">{member.name}</div>
+                  <div className="text-xs text-muted">{member.relationship}</div>
                 </div>
                 {selectedFamilyMember &&
                   selectedFamilyMember !== 'owner' &&
                   selectedFamilyMember.id === member.id && (
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <div className="w-2 h-2 rounded-full bg-primary-500"></div>
                   )}
               </button>
             ))}
 
             {(!familyMembers || familyMembers.length === 0) && (
-              <div className="px-4 py-3 text-sm text-gray-500 text-center">
+              <div className="px-4 py-3 text-sm text-muted text-center">
                 {t('common.noData')}
               </div>
             )}

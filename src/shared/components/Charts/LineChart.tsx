@@ -25,7 +25,7 @@ interface LineChartProps {
 function LineChart({
   data,
   dataKeys,
-  colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
+  colors = ['#4f86ff', '#27c7da', '#f5b43c', '#ef4444', '#6dc36d', '#c084fc'],
   xAxisKey = 'name',
   height = 300,
 }: LineChartProps) {

@@ -97,7 +97,7 @@ function BudgetWidget() {
         <p className="text-gray-600 mb-4">
           {t('budgets.noBudgetsThisMonth') || 'No budgets set for this month.'}
         </p>
-        <Link to="/budgets" className="text-blue-600 hover:text-blue-700 font-medium">
+        <Link to="/budgets" className="text-primary-600 hover:text-primary-700 font-medium">
           {t('budgets.createBudget') || 'Create Budget'} →
         </Link>
       </Card>
@@ -116,7 +116,7 @@ function BudgetWidget() {
         </div>
         <Link
           to="/budgets"
-          className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
           {t('common.viewAll') || 'View All'} →
         </Link>
@@ -194,7 +194,7 @@ function BudgetWidget() {
         <div className="mt-4 text-center">
           <Link
             to="/budgets"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
             {t('budgets.viewMore', { count: currentMonthBudgets.length - 3 }) ||
               `View ${currentMonthBudgets.length - 3} more`}

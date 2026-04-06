@@ -6,18 +6,43 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'Noto Sans Arabic', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        app: {
+          DEFAULT: '#2c3444',
+          soft: '#5f6980',
+          muted: '#8e97aa',
+          bg: '#fcfbf8',
+          surface: 'rgba(255, 255, 255, 0.82)',
+          'surface-solid': '#ffffff',
+          border: '#e6e8ef',
+          'border-strong': '#d9dee8',
+        },
+        muted: '#8e97aa',
+        accent: {
+          cyan: '#27c7da',
+          amber: '#f5b43c',
+          violet: '#c084fc',
+          green: '#6dc36d',
+        },
+        chip: {
+          bg: '#f4f7ff',
+          border: '#dfe6fb',
+          text: '#5f74b5',
+        },
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#eef2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#4f86ff',
+          600: '#6478ff',
+          700: '#4c5fd4',
+          800: '#3d4fb0',
+          900: '#363f8a',
         },
       },
       animation: {
@@ -66,4 +91,3 @@ export default {
   },
   plugins: [],
 }
-

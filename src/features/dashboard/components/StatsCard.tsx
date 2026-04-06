@@ -25,8 +25,8 @@ function StatsCard({ title, value, currency, icon, trend }: StatsCardProps) {
     <Card className="hover:shadow-lg transition-all duration-300">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">
+          <p className="text-sm font-medium text-app-soft">{title}</p>
+          <p className="text-2xl font-bold text-app mt-2">
             {displayValue}
           </p>
           {trend && currency !== undefined && currency !== null && (
@@ -40,7 +40,7 @@ function StatsCard({ title, value, currency, icon, trend }: StatsCardProps) {
             </p>
           )}
         </div>
-        {icon && <div className="text-blue-600">{icon}</div>}
+        {icon && <div className="text-primary-500">{icon}</div>}
       </div>
     </Card>
   );

@@ -24,11 +24,12 @@ export default defineConfig({
       strategies: 'generateSW', // Use generateSW for better control
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
+        id: '/',
         name: 'Wallet Management',
         short_name: 'Wallet',
         description: 'Bilingual PWA for wallet management',
-        theme_color: '#3b82f6',
-        background_color: '#ffffff',
+        theme_color: '#4f86ff',
+        background_color: '#fcfbf8',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',

@@ -34,17 +34,17 @@ function ToastComponent({ toast, onClose }: ToastProps) {
   };
 
   const colors = {
-    success: 'bg-green-500/20 border-green-400/50 text-green-100',
-    error: 'bg-red-500/20 border-red-400/50 text-red-100',
-    warning: 'bg-yellow-500/20 border-yellow-400/50 text-yellow-100',
-    info: 'bg-blue-500/20 border-blue-400/50 text-blue-100',
+    success: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+    error: 'bg-red-50 border-red-200 text-red-900',
+    warning: 'bg-amber-50 border-amber-200 text-amber-900',
+    info: 'bg-primary-50 border-primary-200 text-primary-900',
   };
 
   const Icon = icons[toast.type];
 
   return (
     <div
-      className={`glass-card backdrop-blur-xl ${colors[toast.type]} border rounded-lg p-4 shadow-lg animate-fade-in-up flex items-start space-x-3 rtl:space-x-reverse min-w-[300px] max-w-md`}
+      className={`surface-panel ${colors[toast.type]} rounded-[14px] p-4 animate-fade-in-up flex items-start space-x-3 rtl:space-x-reverse min-w-[300px] max-w-md`}
     >
       <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
       <div className="flex-1">
@@ -52,7 +52,7 @@ function ToastComponent({ toast, onClose }: ToastProps) {
       </div>
       <button
         onClick={() => onClose(toast.id)}
-        className="flex-shrink-0 text-white/80 hover:text-white transition-colors"
+        className="flex-shrink-0 text-app-soft hover:text-app transition-colors"
       >
         <XMarkIcon className="w-4 h-4" />
       </button>

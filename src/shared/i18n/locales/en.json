@@ -42,7 +42,16 @@
     "exportCsv": "Export CSV",
     "exportPdf": "Export PDF",
     "optional": "Optional",
-    "currency": "Currency"
+    "currency": "Currency",
+    "openMenu": "Open main menu"
+  },
+  "nav": {
+    "closeMenu": "Close menu",
+    "mainNavigation": "Main navigation"
+  },
+  "language": {
+    "switchToEnglish": "Switch to English",
+    "switchToArabic": "Switch to Arabic"
   },
   "install": {
     "installApp": "Install App",
@@ -137,9 +146,20 @@
     "notes": "Notes",
     "receipt": "Receipt",
     "uploadReceipt": "Upload Receipt",
+    "receiptUploadComingSoon": "Receipt uploads are coming soon and are not available yet.",
     "income": "Income",
     "expense": "Expense",
-    "info": "Transactions are income (money in) or expenses (money out). They affect wallet balances and are tracked against budgets. Budget status badges show if you're on track (green), at risk (yellow), or exceeded (red)."
+    "info": "Transactions are income (money in) or expenses (money out). They affect wallet balances and are tracked against budgets. Budget status badges show if you're on track (green), at risk (yellow), or exceeded (red).",
+    "categories": {
+      "Food": "Food",
+      "Transport": "Transport",
+      "Utilities": "Utilities",
+      "Entertainment": "Entertainment",
+      "Healthcare": "Healthcare",
+      "Education": "Education",
+      "Shopping": "Shopping",
+      "Other": "Other"
+    }
   },
   "recurring": {
     "title": "Recurring Transactions",
@@ -342,6 +362,7 @@
   },
   "footer": {
     "developedBy": "Developed by",
+    "authorName": "Wajd Hannoun",
     "copyright": "© {{year}} All rights reserved."
   }
 }

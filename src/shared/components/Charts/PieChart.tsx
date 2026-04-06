@@ -19,14 +19,14 @@ interface PieChartProps {
 }
 
 const DEFAULT_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
+  '#4f86ff',
+  '#27c7da',
+  '#f5b43c',
+  '#6dc36d',
+  '#c084fc',
   '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#84cc16',
+  '#6478ff',
+  '#f472b6',
 ];
 
 function PieChart({
@@ -44,7 +44,7 @@ function PieChart({
           labelLine={false}
           label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
           outerRadius={80}
-          fill="#8884d8"
+          fill="#4f86ff"
           dataKey="value"
         >
           {data.map((_entry, index) => (

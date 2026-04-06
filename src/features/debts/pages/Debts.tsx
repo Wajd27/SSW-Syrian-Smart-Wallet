@@ -160,7 +160,7 @@ function Debts() {
           >
             <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 rtl:ml-0 rtl:mr-2" />
             <span className="hidden sm:inline">{t('debts.addDebt')}</span>
-            <span className="sm:hidden">{t('debts.add') || 'Add'}</span>
+            <span className="sm:hidden">{t('common.add')}</span>
           </Button>
         </div>
 
@@ -173,7 +173,7 @@ function Debts() {
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold text-gray-800">{debt.name}</h3>
-                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                  <span className="px-2 py-1 text-xs font-medium bg-chip-bg border border-chip-border text-chip-text rounded-full">
                     {debt.currency || user?.default_currency || 'SYP'}
                   </span>
                 </div>

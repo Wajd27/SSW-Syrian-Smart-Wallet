@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useFeedback } from '@/shared/hooks/useFeedback';
@@ -10,12 +11,13 @@ interface RefreshButtonProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-function RefreshButton({ 
-  queryKeys = [], 
+function RefreshButton({
+  queryKeys = [],
   onRefresh,
   className = '',
-  size = 'md'
+  size = 'md',
 }: RefreshButtonProps) {
+  const { t } = useTranslation();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
   const { triggerFeedback } = useFeedback();
@@ -31,20 +33,16 @@ function RefreshButton({
         await onRefresh();
       }
 
-      // Invalidate specified query keys
       if (queryKeys.length > 0) {
         queryKeys.forEach((key) => {
           queryClient.invalidateQueries({ queryKey: [key] });
         });
       } else {
-        // Invalidate all queries if no specific keys provided
         queryClient.invalidateQueries();
       }
 
-      // Wait a bit for the refresh to complete
       await new Promise((resolve) => setTimeout(resolve, 300));
-      
-      // Success feedback when refresh completes
+
       triggerFeedback('success');
     } catch (error) {
       console.error('Refresh error:', error);
@@ -55,32 +53,34 @@ function RefreshButton({
   }, [isRefreshing, onRefresh, queryKeys, queryClient, triggerFeedback]);
 
   const sizeClasses = {
-    sm: 'p-1.5',
+    sm: 'p-2',
     md: 'p-2',
     lg: 'p-2.5',
   };
 
   const iconSizes = {
-    sm: 'w-4 h-4',
+    sm: 'w-5 h-5',
     md: 'w-5 h-5',
     lg: 'w-6 h-6',
   };
 
   return (
     <button
+      type="button"
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className={`rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${className}`}
-      title="Refresh"
+      className={`inline-flex items-center justify-center rounded-xl text-app-soft hover:text-app hover:bg-app-bg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${className}`}
+      title={t('common.refresh')}
+      aria-label={t('common.refresh')}
     >
       <ArrowPathIcon
         className={`${iconSizes[size]} transition-transform duration-300 ${
           isRefreshing ? 'animate-spin' : ''
         }`}
+        aria-hidden
       />
     </button>
   );
 }
 
 export default RefreshButton;
-

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { guideContent } from './guideContent';
@@ -10,32 +11,40 @@ interface UserGuideProps {
   onClose: () => void;
 }
 
+function guideItemSteps(sectionId: string, itemId: string, t: TFunction): string[] {
+  const raw = t(`userGuide.sections.${sectionId}.items.${itemId}.steps`, { returnObjects: true });
+  return Array.isArray(raw) ? (raw as string[]) : [];
+}
+
 function UserGuide({ isOpen, onClose }: UserGuideProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   const filteredContent = useMemo(() => {
-    if (!searchQuery.trim()) {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) {
       return guideContent;
     }
-
-    const query = searchQuery.toLowerCase();
-    return guideContent.map((section) => ({
-      ...section,
-      items: section.items.filter(
-        (item) =>
-          item.title.toLowerCase().includes(query) ||
-          item.content.toLowerCase().includes(query)
-      ),
-    })).filter((section) => section.items.length > 0);
-  }, [searchQuery]);
+    return guideContent
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          const title = t(`userGuide.sections.${section.id}.items.${item.id}.title`);
+          const content = t(`userGuide.sections.${section.id}.items.${item.id}.content`);
+          return (
+            title.toLowerCase().includes(query) || content.toLowerCase().includes(query)
+          );
+        }),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [searchQuery, t, i18n.language]);
 
   const selectedItem = useMemo(() => {
     if (!selectedSection) return null;
     for (const section of guideContent) {
       const item = section.items.find((i) => i.id === selectedSection);
-      if (item) return { section: section.title, ...item };
+      if (item) return { sectionId: section.id, itemId: item.id };
     }
     return null;
   }, [selectedSection]);
@@ -44,59 +53,60 @@ function UserGuide({ isOpen, onClose }: UserGuideProps) {
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="glass-card backdrop-blur-xl bg-white/30 border border-white/20 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col animate-scale-in">
+        <Dialog.Panel className="surface-panel rounded-2xl w-full max-w-6xl max-h-[90vh] flex flex-col animate-scale-in">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-white/20">
-            <Dialog.Title className="text-2xl font-bold text-gray-800">
-              {t('userGuide.title') || 'User Guide'}
+          <div className="flex items-center justify-between p-6 border-b border-app-border">
+            <Dialog.Title className="text-2xl font-bold text-app">
+              {t('userGuide.title')}
             </Dialog.Title>
             <button
               onClick={onClose}
-              className="text-gray-600 hover:text-gray-900 hover:bg-gray-100/60 rounded-full p-2 transition-colors"
+              className="text-app-soft hover:text-app hover:bg-app-bg rounded-full p-2 transition-colors"
             >
               <XMarkIcon className="w-6 h-6" />
             </button>
           </div>
 
           {/* Search */}
-          <div className="p-4 border-b border-white/20">
+          <div className="p-4 border-b border-app-border">
             <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <MagnifyingGlassIcon className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('userGuide.searchPlaceholder') || 'Search guide...'}
-                className="w-full pl-10 pr-4 py-2 glass-input rounded-lg text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder={t('userGuide.searchPlaceholder')}
+                className="w-full ps-10 pe-4 py-2 input rounded-[10px] placeholder:text-muted"
               />
             </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden flex">
+          <div className="flex-1 overflow-hidden flex min-h-0">
             {/* Sidebar - Table of Contents */}
-            <div className="w-64 border-r border-white/20 overflow-y-auto p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                {t('userGuide.tableOfContents') || 'Table of Contents'}
+            <div className="w-64 shrink-0 border-r border-app-border overflow-y-auto p-4">
+              <h3 className="text-lg font-semibold text-app mb-4">
+                {t('userGuide.tableOfContents')}
               </h3>
               <nav className="space-y-2">
                 {filteredContent.map((section) => (
                   <div key={section.id} className="mb-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      {section.title}
+                    <h4 className="text-sm font-semibold text-app-soft mb-2">
+                      {t(`userGuide.sections.${section.id}.title`)}
                     </h4>
                     <ul className="space-y-1">
                       {section.items.map((item) => (
                         <li key={item.id}>
                           <button
+                            type="button"
                             onClick={() => setSelectedSection(item.id)}
-                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                            className={`w-full text-start px-3 py-2 rounded-lg text-sm transition-colors ${
                               selectedSection === item.id
-                                ? 'bg-blue-100/80 text-blue-900'
-                                : 'text-gray-600 hover:bg-blue-50/60 hover:text-blue-900'
+                                ? 'bg-chip-bg border border-chip-border text-chip-text font-semibold'
+                                : 'text-app-soft hover:bg-app-bg hover:text-app'
                             }`}
                           >
-                            {item.title}
+                            {t(`userGuide.sections.${section.id}.items.${item.id}.title`)}
                           </button>
                         </li>
                       ))}
@@ -107,39 +117,45 @@ function UserGuide({ isOpen, onClose }: UserGuideProps) {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 min-h-0 overflow-y-auto p-6">
               {selectedItem ? (
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-gray-500 mb-2">{selectedItem.section}</p>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                      {selectedItem.title}
+                    <p className="text-sm text-muted mb-2">
+                      {t(`userGuide.sections.${selectedItem.sectionId}.title`)}
+                    </p>
+                    <h2 className="text-2xl font-bold text-app mb-4">
+                      {t(
+                        `userGuide.sections.${selectedItem.sectionId}.items.${selectedItem.itemId}.title`
+                      )}
                     </h2>
                   </div>
-                  <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap">
-                    {selectedItem.content}
+                  <div className="prose prose-sm max-w-none text-app-soft whitespace-pre-wrap">
+                    {t(
+                      `userGuide.sections.${selectedItem.sectionId}.items.${selectedItem.itemId}.content`
+                    )}
                   </div>
-                  {selectedItem.steps && selectedItem.steps.length > 0 && (
+                  {guideItemSteps(selectedItem.sectionId, selectedItem.itemId, t).length > 0 && (
                     <div className="mt-6">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                        {t('userGuide.steps') || 'Steps'}
+                      <h3 className="text-lg font-semibold text-app mb-3">
+                        {t('userGuide.steps')}
                       </h3>
-                      <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                        {selectedItem.steps.map((step, index) => (
-                          <li key={index} className="ml-4">
-                            {step}
-                          </li>
-                        ))}
+                      <ol className="list-decimal list-inside space-y-2 text-app-soft">
+                        {guideItemSteps(selectedItem.sectionId, selectedItem.itemId, t).map(
+                          (step, index) => (
+                            <li key={index} className="ms-4">
+                              {step}
+                            </li>
+                          )
+                        )}
                       </ol>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full min-h-[200px]">
                   <div className="text-center">
-                    <p className="text-gray-500 text-lg mb-4">
-                      {t('userGuide.selectTopic') || 'Select a topic from the table of contents to get started'}
-                    </p>
+                    <p className="text-muted text-lg mb-4">{t('userGuide.selectTopic')}</p>
                   </div>
                 </div>
               )}
@@ -147,7 +163,7 @@ function UserGuide({ isOpen, onClose }: UserGuideProps) {
           </div>
 
           {/* Footer */}
-          <div className="p-4 border-t border-white/20 flex items-center justify-end">
+          <div className="p-4 border-t border-app-border flex items-center justify-end">
             <Button onClick={onClose} variant="secondary">
               {t('common.close')}
             </Button>
@@ -159,4 +175,3 @@ function UserGuide({ isOpen, onClose }: UserGuideProps) {
 }
 
 export default UserGuide;
-

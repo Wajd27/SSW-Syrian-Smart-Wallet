@@ -337,7 +337,7 @@ function Budgets() {
             >
               <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 rtl:ml-0 rtl:mr-2" />
               <span className="hidden sm:inline">{t('budgets.addBudget')}</span>
-              <span className="sm:hidden">{t('budgets.add') || 'Add'}</span>
+              <span className="sm:hidden">{t('common.add')}</span>
             </Button>
           </div>
         </div>
@@ -365,7 +365,7 @@ function Budgets() {
                     </p>
                   </div>
                   {budget.family_member_id && (
-                    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 font-medium">
+                    <span className="px-2 py-1 text-xs rounded-full bg-chip-bg border border-chip-border text-chip-text font-medium">
                       👤 {familyMembers?.find((m) => m.id === budget.family_member_id)?.name || t('family.member')}
                     </span>
                   )}

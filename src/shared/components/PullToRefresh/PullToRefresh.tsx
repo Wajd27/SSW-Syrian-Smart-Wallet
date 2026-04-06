@@ -156,11 +156,11 @@ function PullToRefresh({
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="glass-card backdrop-blur-xl bg-white/30 border border-white/40 rounded-full p-2.5 sm:p-3 shadow-lg hover:bg-white/40 transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="surface-panel rounded-full p-2.5 sm:p-3 hover:bg-white transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh"
           >
             <ArrowPathIcon
-              className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-700 transition-transform duration-300 ${
+              className={`w-4 h-4 sm:w-5 sm:h-5 text-app transition-transform duration-300 ${
                 isRefreshing ? 'animate-spin' : ''
               }`}
             />
@@ -177,9 +177,9 @@ function PullToRefresh({
             opacity: pullProgress,
           }}
         >
-          <div className="glass-card backdrop-blur-xl bg-white/30 border border-white/40 rounded-full p-3 shadow-lg">
+          <div className="surface-panel rounded-full p-3">
             <ArrowPathIcon
-              className={`w-6 h-6 text-white transition-transform duration-300 ${
+              className={`w-6 h-6 text-primary-500 transition-transform duration-300 ${
                 isRefreshing ? 'animate-spin' : ''
               }`}
               style={{

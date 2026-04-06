@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '@/features/auth/context/AuthContext';
 import LanguageSwitcher from '../LanguageSwitcher/LanguageSwitcher';
 import NotificationBell from '../NotificationBell/NotificationBell';
 import InstallButton from '../InstallButton/InstallButton';
@@ -16,11 +15,9 @@ interface HeaderProps {
 
 function Header({ onMenuClick }: HeaderProps) {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const location = useLocation();
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // Map routes to their query keys for refresh
   const getRefreshQueryKeys = () => {
     const path = location.pathname;
     if (path === '/') return ['wallets', 'transactions', 'family-members', 'dashboard'];
@@ -36,20 +33,25 @@ function Header({ onMenuClick }: HeaderProps) {
     return [];
   };
 
+  const refreshKeys = getRefreshQueryKeys();
+
   return (
-    <header className="glass-card backdrop-blur-xl bg-white/20 border-b border-white/30 sticky top-0 z-40 shadow-lg">
-      <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
+    <header className="surface-header">
+      <div className="px-3 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center min-h-14 h-14 sm:h-16">
+          <div className="flex items-center min-w-0 flex-1">
             <button
+              type="button"
               onClick={onMenuClick}
-              className="lg:hidden p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300"
+              className="lg:hidden p-2 rounded-xl min-h-11 min-w-11 inline-flex items-center justify-center text-app-soft hover:text-app hover:bg-app-bg transition-all duration-200 shrink-0"
+              aria-label={t('common.openMenu')}
             >
               <svg
                 className="h-6 w-6"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden
               >
                 <path
                   strokeLinecap="round"
@@ -59,33 +61,30 @@ function Header({ onMenuClick }: HeaderProps) {
                 />
               </svg>
             </button>
-            <div className="flex items-center space-x-2 rtl:space-x-reverse ml-2 lg:ml-0 rtl:ml-0 rtl:mr-2 rtl:lg:mr-0">
+            <div className="flex items-center gap-2 rtl:space-x-reverse ml-1 sm:ml-2 lg:ml-0 rtl:ml-0 rtl:mr-1 rtl:sm:mr-2 rtl:lg:mr-0 min-w-0">
               <img
                 src="/AppImages/android/android-launchericon-48-48.png"
-                alt={t('common.appName')}
-                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg"
+                alt=""
+                className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg shrink-0"
               />
-              <h1 className="text-lg sm:text-xl font-semibold text-gray-800 drop-shadow-sm truncate max-w-[120px] sm:max-w-none">
+              <h1 className="text-base sm:text-lg lg:text-xl font-semibold text-app truncate">
                 {t('common.appName')}
               </h1>
             </div>
           </div>
 
-          <div className="flex items-center space-x-1 sm:space-x-2 md:space-x-4 rtl:space-x-reverse">
-            {/* Refresh Button - only show on main pages */}
-            {getRefreshQueryKeys().length > 0 && (
-              <RefreshButton 
-                queryKeys={getRefreshQueryKeys()} 
-                size="sm"
-                className="hidden sm:block"
-              />
+          <div className="flex items-center justify-end gap-0.5 sm:gap-1 md:gap-2 shrink-0">
+            {refreshKeys.length > 0 && (
+              <RefreshButton queryKeys={refreshKeys} size="sm" className="min-h-11 min-w-11 rounded-xl" />
             )}
             <button
+              type="button"
               onClick={() => setIsGuideOpen(true)}
-              className="p-1.5 sm:p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100/60 transition-all duration-300"
+              className="p-2 rounded-xl min-h-11 min-w-11 inline-flex items-center justify-center text-app-soft hover:text-app hover:bg-app-bg transition-all duration-200"
               title={t('userGuide.help')}
+              aria-label={t('userGuide.help')}
             >
-              <QuestionMarkCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+              <QuestionMarkCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" aria-hidden />
             </button>
             <div className="hidden sm:block">
               <InstallButton />
@@ -93,13 +92,6 @@ function Header({ onMenuClick }: HeaderProps) {
             <NotificationBell />
             <LanguageSwitcher />
             <FamilyMemberSwitcher />
-            {user && (
-              <div className="hidden lg:flex items-center space-x-2 rtl:space-x-reverse">
-                <div className="text-xs sm:text-sm text-gray-700 font-medium truncate max-w-[100px] xl:max-w-none">
-                  {user.full_name || user.email}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -109,4 +101,3 @@ function Header({ onMenuClick }: HeaderProps) {
 }
 
 export default Header;
-

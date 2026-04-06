@@ -134,24 +134,25 @@ function FinancialHealthOverview() {
 
   const healthColor = {
     excellent: 'text-green-600',
-    good: 'text-blue-600',
+    good: 'text-primary-600',
     fair: 'text-yellow-600',
     poor: 'text-red-600',
   }[financialStatus.healthStatus];
 
+  /** Softer tints than full-50 palettes so the card feels calmer than the main surface */
   const healthBgColor = {
-    excellent: 'bg-green-50 border-green-200',
-    good: 'bg-blue-50 border-blue-200',
-    fair: 'bg-yellow-50 border-yellow-200',
-    poor: 'bg-red-50 border-red-200',
+    excellent: 'bg-emerald-50/40 border-emerald-200/50',
+    good: 'bg-slate-50/80 border-slate-200/60',
+    fair: 'bg-stone-50/90 border-stone-200/70',
+    poor: 'bg-rose-50/45 border-rose-200/55',
   }[financialStatus.healthStatus];
 
   return (
     <Card className={`${healthBgColor} border-2`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <WalletIcon className="w-6 h-6 text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-800">
+          <WalletIcon className="w-6 h-6 text-app-soft" />
+          <h3 className="text-lg font-semibold text-app">
             {t('dashboard.financialHealth') || 'Financial Health'}
           </h3>
           <InfoTooltip
@@ -180,7 +181,7 @@ function FinancialHealthOverview() {
         {/* Net Worth */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-app-soft">
               {t('dashboard.netWorth') || 'Net Worth'}
             </span>
             <InfoTooltip
@@ -203,7 +204,7 @@ function FinancialHealthOverview() {
         {/* Savings Rate */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-app-soft">
               {t('dashboard.savingsRate') || 'Savings Rate'}
             </span>
             <InfoTooltip
@@ -221,7 +222,7 @@ function FinancialHealthOverview() {
                 financialStatus.savingsRate >= 20
                   ? 'text-green-600'
                   : financialStatus.savingsRate >= 10
-                  ? 'text-blue-600'
+                  ? 'text-primary-600'
                   : financialStatus.savingsRate >= 0
                   ? 'text-yellow-600'
                   : 'text-red-600'
@@ -235,7 +236,7 @@ function FinancialHealthOverview() {
         {/* Debt-to-Income Ratio */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 rtl:space-x-reverse">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-app-soft">
               {t('dashboard.debtToIncome') || 'Debt-to-Income'}
             </span>
             <InfoTooltip
@@ -247,7 +248,7 @@ function FinancialHealthOverview() {
               financialStatus.debtToIncomeRatio < 20
                 ? 'text-green-600'
                 : financialStatus.debtToIncomeRatio < 30
-                ? 'text-blue-600'
+                ? 'text-primary-600'
                 : financialStatus.debtToIncomeRatio < 40
                 ? 'text-yellow-600'
                 : 'text-red-600'
@@ -258,14 +259,14 @@ function FinancialHealthOverview() {
         </div>
 
         {/* Cash Flow */}
-        <div className="pt-3 border-t border-gray-200">
-          <div className="text-sm font-semibold text-gray-700 mb-2">
+        <div className="pt-3 border-t border-app-border">
+          <div className="text-base font-semibold text-app-soft mb-3 sm:text-lg">
             {t('dashboard.monthlyCashFlow') || 'Monthly Cash Flow'}
           </div>
-          <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="grid grid-cols-3 gap-3 text-sm sm:text-base">
             <div>
-              <div className="text-gray-500">{t('dashboard.income')}</div>
-              <div className="font-semibold text-green-600">
+              <div className="text-app-soft text-sm sm:text-base">{t('dashboard.income')}</div>
+              <div className="font-semibold tabular-nums text-green-600 sm:text-lg">
                 {formatCurrency(
                   financialStatus.cashFlow.monthlyIncome,
                   user?.default_currency || 'SYP',
@@ -274,8 +275,8 @@ function FinancialHealthOverview() {
               </div>
             </div>
             <div>
-              <div className="text-gray-500">{t('dashboard.expenses')}</div>
-              <div className="font-semibold text-red-600">
+              <div className="text-app-soft text-sm sm:text-base">{t('dashboard.expenses')}</div>
+              <div className="font-semibold tabular-nums text-red-600 sm:text-lg">
                 {formatCurrency(
                   financialStatus.cashFlow.monthlyExpenses,
                   user?.default_currency || 'SYP',
@@ -284,9 +285,9 @@ function FinancialHealthOverview() {
               </div>
             </div>
             <div>
-              <div className="text-gray-500">{t('dashboard.net') || 'Net'}</div>
+              <div className="text-app-soft text-sm sm:text-base">{t('dashboard.net') || 'Net'}</div>
               <div
-                className={`font-semibold ${
+                className={`font-semibold tabular-nums sm:text-lg ${
                   financialStatus.cashFlow.netCashFlow >= 0
                     ? 'text-green-600'
                     : 'text-red-600'

@@ -88,13 +88,13 @@ function InfoTooltip({ content, position = 'top', className = '', size = 'md' }:
       onTouchStart={() => setIsVisible(!isVisible)}
     >
       <InformationCircleIcon
-        className={`${sizeClasses[size]} text-blue-500 hover:text-blue-600 cursor-help transition-colors`}
+        className={`${sizeClasses[size]} text-primary-500 hover:text-primary-600 cursor-help transition-colors`}
         aria-label="Information"
       />
       {isVisible && (
         <div
           ref={tooltipRef}
-          className="absolute z-50 px-3 py-2 text-sm text-gray-800 bg-white/95 backdrop-blur-sm border border-gray-200 rounded-lg shadow-lg max-w-xs pointer-events-none animate-fade-in"
+          className="absolute z-50 px-3 py-2 text-sm text-app bg-white/95 backdrop-blur-sm border border-app-border rounded-xl shadow-lg max-w-xs pointer-events-none animate-fade-in"
           style={{
             whiteSpace: 'pre-wrap',
             wordWrap: 'break-word',

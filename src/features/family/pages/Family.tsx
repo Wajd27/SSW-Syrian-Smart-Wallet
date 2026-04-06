@@ -283,7 +283,7 @@ function Family() {
           >
             <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 rtl:ml-0 rtl:mr-2" />
             <span className="hidden sm:inline">{t('family.addMember')}</span>
-            <span className="sm:hidden">{t('family.add') || 'Add'}</span>
+            <span className="sm:hidden">{t('common.add')}</span>
           </Button>
         </div>
 
@@ -368,7 +368,7 @@ function Family() {
                       {stats.favoriteCategory && (
                         <div className="flex justify-between items-center">
                           <span className="text-xs text-gray-500">{t('family.favoriteCategory')}</span>
-                          <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                          <span className="text-xs font-medium text-chip-text bg-chip-bg border border-chip-border px-2 py-1 rounded-lg">
                             {stats.favoriteCategory}
                           </span>
                         </div>

@@ -183,7 +183,7 @@ function SavingsGoals() {
           >
             <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 rtl:ml-0 rtl:mr-2" />
             <span className="hidden sm:inline">{t('savingsGoals.addGoal')}</span>
-            <span className="sm:hidden">{t('savingsGoals.add') || 'Add'}</span>
+            <span className="sm:hidden">{t('common.add')}</span>
           </Button>
         </div>
 
@@ -200,7 +200,7 @@ function SavingsGoals() {
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-lg font-semibold text-gray-800">{goal.title}</h3>
-                  <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                  <span className="px-2 py-1 text-xs font-medium bg-chip-bg border border-chip-border text-chip-text rounded-full">
                     {wallet?.currency || 'SYP'}
                   </span>
                 </div>

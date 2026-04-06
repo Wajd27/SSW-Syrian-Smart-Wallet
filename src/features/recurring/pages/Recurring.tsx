@@ -234,7 +234,7 @@ function Recurring() {
           >
             <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 ml-2 rtl:ml-0 rtl:mr-2" />
             <span className="hidden sm:inline">{t('recurring.addRecurring')}</span>
-            <span className="sm:hidden">{t('recurring.add') || 'Add'}</span>
+            <span className="sm:hidden">{t('common.add')}</span>
           </Button>
         </div>
 

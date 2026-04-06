@@ -11,20 +11,20 @@ function Input({ label, error, helperText, className, ...props }: InputProps) {
   return (
     <div className="w-full">
       {label && (
-        <label htmlFor={props.id} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={props.id} className="block text-sm font-medium text-app-soft mb-1">
           {label}
         </label>
       )}
       <input
         className={clsx(
-          'input text-gray-900 placeholder:text-gray-500',
+          'input text-app placeholder:text-muted',
           error && 'border-red-400/50 focus:ring-red-400/50',
           className
         )}
         {...props}
       />
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-      {helperText && !error && <p className="mt-1 text-sm text-gray-600">{helperText}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-app-soft">{helperText}</p>}
     </div>
   );
 }

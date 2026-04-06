@@ -63,7 +63,7 @@ function Button({
     >
       {isLoading ? (
         <>
-          <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+          <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white/40 border-t-white mr-2" />
           Loading...
         </>
       ) : (

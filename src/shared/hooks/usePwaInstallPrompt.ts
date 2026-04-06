@@ -18,7 +18,8 @@ function attachListeners() {
   listenersAttached = true;
 
   window.addEventListener('beforeinstallprompt', (e) => {
-    if (localStorage.getItem('pwa-install-dismissed')) {
+    // sessionStorage: dismiss only for this tab session — localStorage used to block install permanently
+    if (sessionStorage.getItem('pwa-install-dismissed')) {
       return;
     }
     e.preventDefault();
@@ -32,6 +33,16 @@ function attachListeners() {
   });
 }
 
+if (typeof window !== 'undefined') {
+  // Legacy: dismiss used to live in localStorage and blocked install for good; remove stale flag.
+  try {
+    localStorage.removeItem('pwa-install-dismissed');
+  } catch {
+    /* ignore */
+  }
+  attachListeners();
+}
+
 export function clearPwaInstallDeferred() {
   globalDeferred = null;
   notify();
@@ -39,7 +50,7 @@ export function clearPwaInstallDeferred() {
 
 /**
  * Single shared listener for `beforeinstallprompt` so we only call preventDefault once.
- * If the user dismissed install, we do not preventDefault so the browser can show its own UI.
+ * If the user dismissed the offer this session, we do not preventDefault so the browser can show its own UI.
  */
 export function usePwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(globalDeferred);

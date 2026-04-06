@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { entities } from '@/shared/api/entities';
 import { useAuth } from '@/features/auth/context/AuthContext';
@@ -7,6 +8,7 @@ import NotificationPopover from './NotificationPopover';
 import { useFeedback } from '@/shared/hooks/useFeedback';
 
 function NotificationBell() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const { triggerFeedback } = useFeedback();
@@ -35,11 +37,14 @@ function NotificationBell() {
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={() => {
           triggerFeedback('click');
           setIsOpen(!isOpen);
         }}
-        className="relative p-1.5 sm:p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-blue-50/60 transition-colors"
+        className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 text-app-soft transition-colors hover:bg-app-bg hover:text-app"
+        title={t('notifications.title')}
+        aria-label={t('notifications.title')}
       >
         <BellIcon className="w-4 h-4 sm:w-5 sm:h-5" />
         {unreadCount > 0 && (

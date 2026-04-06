@@ -1,6 +1,8 @@
 import { Fragment } from 'react';
+import clsx from 'clsx';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
 
 interface ModalProps {
   isOpen: boolean;
@@ -8,6 +10,8 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  /** Bottom-anchored sheet on small screens (better for long forms on phones). */
+  fullScreenOnMobile?: boolean;
 }
 
 const sizeClasses = {
@@ -18,7 +22,15 @@ const sizeClasses = {
   full: 'max-w-full',
 };
 
-function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
+function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = 'md',
+  fullScreenOnMobile = false,
+}: ModalProps) {
+  const { t } = useTranslation();
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -36,7 +48,12 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <div
+            className={clsx(
+              'flex min-h-full justify-center text-center',
+              fullScreenOnMobile ? 'items-end p-0 sm:items-center sm:p-4' : 'items-center p-4'
+            )}
+          >
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
@@ -47,23 +64,52 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`w-full ${sizeClasses[size]} transform overflow-hidden rounded-2xl glass-card backdrop-blur-xl bg-white/20 border border-white/30 p-6 text-left align-middle shadow-2xl transition-all`}
+                className={clsx(
+                  'w-full transform overflow-hidden text-left align-middle transition-all surface-panel',
+                  sizeClasses[size],
+                  fullScreenOnMobile &&
+                    'max-sm:flex max-sm:max-h-[min(92dvh,calc(100vh-1.5rem))] max-sm:max-w-[calc(100vw-1.5rem)] max-sm:flex-col max-sm:rounded-2xl',
+                  fullScreenOnMobile ? 'p-0 sm:rounded-2xl sm:p-6' : 'rounded-2xl p-6'
+                )}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-800">
-                    {title}
-                  </Dialog.Title>
-                  <button
-                    type="button"
-                    className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md p-1 transition-all duration-300"
-                    onClick={onClose}
-                  >
-                    <XMarkIcon className="h-6 w-6" />
-                  </button>
-                </div>
-                <div className="text-gray-700">
-                  {children}
-                </div>
+                {fullScreenOnMobile ? (
+                  <>
+                    <div className="flex shrink-0 items-center justify-between border-b border-app-border/80 px-4 py-3 sm:border-0 sm:px-0 sm:pb-0 sm:pt-0">
+                      <Dialog.Title as="h3" className="pr-2 text-lg font-medium leading-6 text-app">
+                        {title}
+                      </Dialog.Title>
+                      <button
+                        type="button"
+                        className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl p-2 text-app-soft transition-all duration-200 hover:bg-app-bg hover:text-app"
+                        onClick={onClose}
+                        aria-label={t('common.close')}
+                      >
+                        <XMarkIcon className="h-6 w-6" />
+                      </button>
+                    </div>
+                    {/* Children own scroll + footer (e.g. form with flex-col) so actions stay inside rounded sheet */}
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden text-app-soft">
+                      {children}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-4 flex items-center justify-between">
+                      <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-app">
+                        {title}
+                      </Dialog.Title>
+                      <button
+                        type="button"
+                        className="rounded-xl p-1 text-app-soft transition-all duration-200 hover:bg-app-bg hover:text-app"
+                        onClick={onClose}
+                        aria-label={t('common.close')}
+                      >
+                        <XMarkIcon className="h-6 w-6" />
+                      </button>
+                    </div>
+                    <div className="text-app-soft">{children}</div>
+                  </>
+                )}
               </Dialog.Panel>
             </Transition.Child>
           </div>
@@ -74,4 +120,3 @@ function Modal({ isOpen, onClose, title, children, size = 'md' }: ModalProps) {
 }
 
 export default Modal;
-

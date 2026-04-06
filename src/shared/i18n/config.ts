@@ -3,6 +3,23 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import enTranslations from './locales/en.json';
 import arTranslations from './locales/ar.json';
+import { guideSectionsEn, guideSectionsAr } from './guideSections';
+
+const enMerged = {
+  ...enTranslations,
+  userGuide: {
+    ...enTranslations.userGuide,
+    sections: guideSectionsEn,
+  },
+};
+
+const arMerged = {
+  ...arTranslations,
+  userGuide: {
+    ...arTranslations.userGuide,
+    sections: guideSectionsAr,
+  },
+};
 
 i18n
   .use(LanguageDetector)
@@ -10,10 +27,10 @@ i18n
   .init({
     resources: {
       en: {
-        translation: enTranslations,
+        translation: enMerged,
       },
       ar: {
-        translation: arTranslations,
+        translation: arMerged,
       },
     },
     fallbackLng: 'en',

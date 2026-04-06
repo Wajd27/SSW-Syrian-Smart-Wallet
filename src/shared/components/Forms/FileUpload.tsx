@@ -9,6 +9,8 @@ interface FileUploadProps {
   onChange: (file: File | null) => void;
   value?: File | null;
   previewUrl?: string;
+  /** When set, the control is read-only and shows this notice (e.g. uploads not available yet). */
+  comingSoonMessage?: string;
 }
 
 function FileUpload({
@@ -18,15 +20,19 @@ function FileUpload({
   accept = 'image/*',
   onChange,
   previewUrl,
+  comingSoonMessage,
 }: FileUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadDisabled = Boolean(comingSoonMessage);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (uploadDisabled) return;
     const file = e.target.files?.[0] || null;
     onChange(file);
   };
 
   const handleClick = () => {
+    if (uploadDisabled) return;
     fileInputRef.current?.click();
   };
 
@@ -37,7 +43,19 @@ function FileUpload({
           {label}
         </label>
       )}
-      <div className="mt-1 flex justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
+      {comingSoonMessage && (
+        <p
+          className="mb-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+          role="status"
+        >
+          {comingSoonMessage}
+        </p>
+      )}
+      <div
+        className={`mt-1 flex justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10 ${
+          uploadDisabled ? 'pointer-events-none opacity-60' : ''
+        }`}
+      >
         <div className="text-center">
           {previewUrl ? (
             <img
@@ -48,11 +66,12 @@ function FileUpload({
           ) : (
             <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
           )}
-          <div className="mt-4 flex text-sm leading-6 text-gray-600">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-1 text-sm leading-6 text-gray-600">
             <button
               type="button"
               onClick={handleClick}
-              className="relative cursor-pointer rounded-md bg-white font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500"
+              disabled={uploadDisabled}
+              className="relative rounded-md bg-white font-semibold text-primary-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-600 focus-within:ring-offset-2 hover:text-primary-500 disabled:cursor-not-allowed disabled:text-gray-400"
             >
               <span>Upload a file</span>
               <input
@@ -60,6 +79,7 @@ function FileUpload({
                 type="file"
                 className="sr-only"
                 accept={accept}
+                disabled={uploadDisabled}
                 onChange={handleFileChange}
               />
             </button>

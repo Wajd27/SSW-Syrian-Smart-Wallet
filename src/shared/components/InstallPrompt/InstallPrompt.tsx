@@ -21,16 +21,23 @@ function InstallPrompt() {
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
     setIsIOS(iOS);
 
-    if (iOS && isInStandaloneMode) {
-      return;
+    if (isInStandaloneMode) {
+      return undefined;
     }
 
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    if (deferredPrompt && !dismissed) {
-      const id = window.setTimeout(() => setShowPrompt(true), 3000);
-      return () => window.clearTimeout(id);
+    const dismissed = sessionStorage.getItem('pwa-install-dismissed');
+    if (dismissed) {
+      return undefined;
     }
-    return undefined;
+
+    // Chromium: deferred prompt. iOS Safari: no beforeinstallprompt — still show manual steps.
+    const shouldOfferInstall = Boolean(deferredPrompt) || iOS;
+    if (!shouldOfferInstall) {
+      return undefined;
+    }
+
+    const id = window.setTimeout(() => setShowPrompt(true), 3000);
+    return () => window.clearTimeout(id);
   }, [deferredPrompt]);
 
   useEffect(() => {
@@ -58,14 +65,14 @@ function InstallPrompt() {
       setIsInstalled(true);
     } else {
       setShowPrompt(false);
-      localStorage.setItem('pwa-install-dismissed', 'true');
+      sessionStorage.setItem('pwa-install-dismissed', 'true');
       clearPwaInstallDeferred();
     }
   };
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem('pwa-install-dismissed', 'true');
+    sessionStorage.setItem('pwa-install-dismissed', 'true');
     clearPwaInstallDeferred();
   };
 
@@ -75,20 +82,20 @@ function InstallPrompt() {
 
   if (isIOS && showPrompt) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
-        <div className="glass-card backdrop-blur-xl bg-white/40 border border-blue-200/50 rounded-xl p-4 shadow-2xl">
+      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[100] animate-slide-up">
+        <div className="surface-panel rounded-2xl p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <DevicePhoneMobileIcon className="w-6 h-6 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-800">
+              <DevicePhoneMobileIcon className="w-6 h-6 text-primary-500" />
+              <h3 className="text-lg font-semibold text-app">
                 {t('install.installApp') || 'Install App'}
               </h3>
             </div>
-            <button type="button" onClick={handleDismiss} className="text-gray-500 hover:text-gray-700 transition-colors">
+            <button type="button" onClick={handleDismiss} className="text-muted hover:text-app transition-colors">
               <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
-          <div className="space-y-2 text-sm text-gray-700 mb-4">
+          <div className="space-y-2 text-sm text-app-soft mb-4">
             <p className="font-medium">{t('install.iosInstructions') || 'To install this app on your iOS device, please use Safari:'}</p>
             <ol className="list-decimal list-inside space-y-1 rtl:text-right">
               <li>{t('install.iosStep1') || 'Open this page in Safari browser'}</li>
@@ -107,20 +114,20 @@ function InstallPrompt() {
 
   if (deferredPrompt) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
-        <div className="glass-card backdrop-blur-xl bg-white/40 border border-blue-200/50 rounded-xl p-4 shadow-2xl">
+      <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[100] animate-slide-up">
+        <div className="surface-panel rounded-2xl p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-2 rtl:space-x-reverse">
-              <ComputerDesktopIcon className="w-6 h-6 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-800">
+              <ComputerDesktopIcon className="w-6 h-6 text-primary-500" />
+              <h3 className="text-lg font-semibold text-app">
                 {t('install.installApp') || 'Install App'}
               </h3>
             </div>
-            <button type="button" onClick={handleDismiss} className="text-gray-500 hover:text-gray-700 transition-colors">
+            <button type="button" onClick={handleDismiss} className="text-muted hover:text-app transition-colors">
               <XMarkIcon className="w-5 h-5" />
             </button>
           </div>
-          <p className="text-sm text-gray-700 mb-4">
+          <p className="text-sm text-app-soft mb-4">
             {t('install.installDescription') || 'Install this app on your device for a better experience and offline access.'}
           </p>
           <div className="flex space-x-2 rtl:space-x-reverse">

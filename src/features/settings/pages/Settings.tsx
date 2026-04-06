@@ -62,7 +62,7 @@ function Settings() {
     <div className="space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-2 rtl:space-x-reverse">
-          <h1 className="text-2xl font-bold text-gray-900">{t('settings.title')}</h1>
+          <h1 className="text-2xl font-bold text-app">{t('settings.title')}</h1>
         </div>
         <Button variant="outline" onClick={() => setIsGuideOpen(true)}>
           {t('userGuide.guide')}
@@ -104,7 +104,7 @@ function Settings() {
         <Card title={t('settings.notificationSettings')}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-app-soft">
                 {t('settings.recurringReminders')}
               </label>
               <input
@@ -119,11 +119,11 @@ function Settings() {
                     },
                   })
                 }
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                className="rounded border-app-border text-primary-600 focus:ring-primary-500/40"
               />
             </div>
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-app-soft">
                 {t('settings.budgetAlerts')}
               </label>
               <input
@@ -138,7 +138,7 @@ function Settings() {
                     },
                   })
                 }
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                className="rounded border-app-border text-primary-600 focus:ring-primary-500/40"
               />
             </div>
             {formData.notification_settings.budget_alerts && (
@@ -159,7 +159,7 @@ function Settings() {
               />
             )}
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-app-soft">
                 {t('settings.savingsMilestones')}
               </label>
               <input
@@ -174,11 +174,11 @@ function Settings() {
                     },
                   })
                 }
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                className="rounded border-app-border text-primary-600 focus:ring-primary-500/40"
               />
             </div>
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-app-soft">
                 {t('settings.investmentUpdates')}
               </label>
               <input
@@ -193,7 +193,7 @@ function Settings() {
                     },
                   })
                 }
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                className="rounded border-app-border text-primary-600 focus:ring-primary-500/40"
               />
             </div>
           </div>
@@ -202,7 +202,7 @@ function Settings() {
         <Card title={t('settings.feedbackSettings') || 'Feedback Settings'}>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-white/90 drop-shadow-sm">
+              <label className="text-sm font-medium text-app-soft">
                 {t('settings.enableHapticFeedback') || 'Enable Haptic Feedback'}
               </label>
               <input
@@ -217,11 +217,11 @@ function Settings() {
                     },
                   })
                 }
-                className="rounded border-white/30 bg-white/10 text-primary-600 focus:ring-primary-500"
+                className="rounded border-app-border text-primary-600 focus:ring-primary-500/40"
               />
             </div>
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-white/90 drop-shadow-sm">
+              <label className="text-sm font-medium text-app-soft">
                 {t('settings.enableSoundEffects') || 'Enable Sound Effects'}
               </label>
               <input
@@ -236,12 +236,12 @@ function Settings() {
                     },
                   })
                 }
-                className="rounded border-white/30 bg-white/10 text-primary-600 focus:ring-primary-500"
+                className="rounded border-app-border text-primary-600 focus:ring-primary-500/40"
               />
             </div>
             {formData.notification_settings.sound_effects_enabled && (
               <div>
-                <label className="block text-sm font-medium text-white/90 drop-shadow-sm mb-2">
+                <label className="block text-sm font-medium text-app-soft mb-2">
                   {t('settings.soundVolume') || 'Sound Volume'}:{' '}
                   {Math.round((formData.notification_settings.sound_volume || 0.4) * 100)}%
                 </label>

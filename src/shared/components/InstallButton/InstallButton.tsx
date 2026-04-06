@@ -51,7 +51,7 @@ function InstallButton() {
         onClick={handleInstallClick}
         variant="outline"
         size="sm"
-        className="hidden sm:flex items-center space-x-1 rtl:space-x-reverse"
+        className="flex items-center space-x-1 rtl:space-x-reverse"
       >
         <ArrowDownTrayIcon className="w-4 h-4" />
         <span>{t('install.install') || 'Install'}</span>
@@ -59,22 +59,22 @@ function InstallButton() {
 
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="glass-card backdrop-blur-xl bg-white/40 border border-blue-200/50 rounded-xl p-6 max-w-md w-full shadow-2xl animate-scale-in">
+          <div className="surface-panel rounded-2xl p-6 max-w-md w-full animate-scale-in">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">
+              <h3 className="text-lg font-semibold text-app">
                 {t('install.installApp') || 'Install App'}
               </h3>
               <button
                 type="button"
                 onClick={() => setShowIOSModal(false)}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
+                className="text-muted hover:text-app transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="space-y-3 text-sm text-gray-700 mb-6">
+            <div className="space-y-3 text-sm text-app-soft mb-6">
               <p className="font-medium">{t('install.iosInstructions') || 'To install this app on your iOS device, please use Safari:'}</p>
               <ol className="list-decimal list-inside space-y-2 rtl:text-right">
                 <li>{t('install.iosStep1') || 'Open this page in Safari browser'}</li>
